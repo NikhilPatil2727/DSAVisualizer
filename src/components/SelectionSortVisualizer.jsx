@@ -6,6 +6,7 @@ const SelectionSortVisualizer = () => {
   const [minIndex, setMinIndex] = useState(-1); // Index of the minimum element
   const [currentIndex, setCurrentIndex] = useState(-1); // Current element being compared
   const [sortedIndices, setSortedIndices] = useState([]); // Indices of sorted elements
+  const [swapping, setSwapping] = useState(false); // State to trigger swap animation
 
   // Generate a random array
   const generateArray = () => {
@@ -16,6 +17,7 @@ const SelectionSortVisualizer = () => {
     setMinIndex(-1);
     setCurrentIndex(-1);
     setSortedIndices([]);
+    setSwapping(false);
   };
 
   useEffect(() => {
@@ -46,11 +48,17 @@ const SelectionSortVisualizer = () => {
 
       // Swap the minimum element with the first unsorted element
       if (minIdx !== i) {
+        setSwapping(true); // Trigger swap animation
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
+        // Swap elements
         const temp = arr[i];
         arr[i] = arr[minIdx];
         arr[minIdx] = temp;
         setArray([...arr]);
+
         await new Promise((resolve) => setTimeout(resolve, 800));
+        setSwapping(false); // Reset swap animation
       }
 
       setSortedIndices((prev) => [...prev, i]); // Mark this index as sorted
@@ -107,7 +115,12 @@ const SelectionSortVisualizer = () => {
                   ? 'bg-green-500'
                   : 'bg-blue-500'
               } rounded-t-lg shadow-md`}
-              style={{ width: '60px', height: `${value * 3}px` }}
+              style={{
+                width: '60px',
+                height: `${value * 3}px`,
+                transform: swapping && (idx === minIndex || idx === currentIndex) ? 'translateY(-20px)' : 'translateY(0)',
+                transition: 'transform 0.5s ease-in-out',
+              }}
             >
               <span className="text-white font-medium text-sm mb-1">{value}</span>
             </div>
