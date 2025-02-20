@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FaPlay, FaPause, FaRandom, FaUndo, FaInfoCircle } from 'react-icons/fa';
+import { FaPlay, FaPause, FaRandom, FaUndo } from 'react-icons/fa';
 import { MdSpeed } from 'react-icons/md';
 
 const SPEED_OPTIONS = {
@@ -80,7 +80,7 @@ const BubbleSortVisualizer = () => {
 
     for (let i = 0; i < n - 1; i++) {
       let swapped = false;
-      
+
       for (let j = 0; j < n - i - 1; j++) {
         if (pausedRef.current) return;
 
@@ -101,7 +101,7 @@ const BubbleSortVisualizer = () => {
           [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
           swaps++;
           swapped = true;
-          
+
           setArray([...arr]);
           setSwapPositions({});
           updateStats(comparisons, swaps);
@@ -110,7 +110,7 @@ const BubbleSortVisualizer = () => {
       }
 
       setSortedIndices(prev => [...prev, n - 1 - i]);
-      
+
       if (!swapped) {
         // Array is sorted
         setSortedIndices(Array.from({ length: n }, (_, i) => i));
@@ -138,6 +138,20 @@ const BubbleSortVisualizer = () => {
   return (
     <div className="flex flex-col items-center min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 p-4 md:p-8">
       <h1 className="text-4xl font-bold text-slate-800 mb-8">Bubble Sort Visualizer</h1>
+
+      {/* Info Panel */}
+      <div className="w-full max-w-4xl bg-white rounded-xl shadow-lg p-6 mb-8">
+        <h2 className="text-2xl font-bold text-slate-800 mb-4">About Bubble Sort</h2>
+        <p className="text-slate-700 mb-2">
+          Bubble Sort is a simple sorting algorithm that repeatedly steps through the list, compares adjacent elements, and swaps them if they are in the wrong order. The pass through the list is repeated until the list is sorted.
+        </p>
+        <p className="text-slate-700 mb-2">
+          <strong>Time Complexity:</strong> O(n²) in the worst and average case, where n is the number of items being sorted.
+        </p>
+        <p className="text-slate-700 mb-2">
+          <strong>Space Complexity:</strong> O(1), as it requires only a constant amount of additional memory space.
+        </p>
+      </div>
 
       {/* Stats Dashboard */}
       <div className="w-full max-w-4xl bg-white rounded-xl shadow-lg p-6 mb-8">
@@ -189,7 +203,7 @@ const BubbleSortVisualizer = () => {
           {array.map((value, idx) => (
             <div
               key={idx}
-              className={`flex flex-col items-center transition-all duration-300 
+              className={`flex flex-col items-center transition-all duration-300
                 ${swapping.includes(idx) ? 'scale-110' : ''}`}
               style={{
                 transform: swapPositions[idx]?.transform || 'translateX(0)',
@@ -197,7 +211,7 @@ const BubbleSortVisualizer = () => {
               }}
             >
               <div
-                className={`w-8 md:w-12 transition-all duration-300 rounded-t-md 
+                className={`w-8 md:w-12 transition-all duration-300 rounded-t-md
                   ${swapping.includes(idx)
                     ? 'bg-gradient-to-b from-yellow-400 to-yellow-600'
                     : sortedIndices.includes(idx)
@@ -207,9 +221,9 @@ const BubbleSortVisualizer = () => {
                 style={{ height: `${value * 3}px` }}
               />
               <span
-                className={`text-xs md:text-sm font-medium mt-2 
-                  ${swapping.includes(idx) 
-                    ? 'text-yellow-600' 
+                className={`text-xs md:text-sm font-medium mt-2
+                  ${swapping.includes(idx)
+                    ? 'text-yellow-600'
                     : sortedIndices.includes(idx)
                     ? 'text-green-600'
                     : 'text-slate-700'
@@ -227,7 +241,7 @@ const BubbleSortVisualizer = () => {
         <button
           onClick={generateArray}
           disabled={sorting}
-          className="px-6 py-3 bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-400 
+          className="px-6 py-3 bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-400
                    text-white font-medium rounded-lg transition-colors duration-200
                    disabled:cursor-not-allowed flex items-center gap-2"
         >
@@ -237,9 +251,9 @@ const BubbleSortVisualizer = () => {
         <button
           onClick={handleSortingControl}
           className={`px-6 py-3 ${
-            sorting && !paused 
-              ? 'bg-yellow-500 hover:bg-yellow-600' 
-              : paused 
+            sorting && !paused
+              ? 'bg-yellow-500 hover:bg-yellow-600'
+              : paused
               ? 'bg-green-500 hover:bg-green-600'
               : 'bg-violet-500 hover:bg-violet-600'
           } text-white font-medium rounded-lg transition-colors duration-200
@@ -250,7 +264,7 @@ const BubbleSortVisualizer = () => {
         </button>
         <button
           onClick={() => resetState()}
-          className="px-6 py-3 bg-blue-500 hover:bg-blue-600 
+          className="px-6 py-3 bg-blue-500 hover:bg-blue-600
                    text-white font-medium rounded-lg transition-colors duration-200
                    flex items-center gap-2"
         >
@@ -296,6 +310,15 @@ const BubbleSortVisualizer = () => {
           />
         </div>
       </div>
+
+      {/* Pause Message */}
+      {paused && (
+        <div className="w-full max-w-4xl bg-yellow-100 border border-yellow-300 text-yellow-800 p-4 rounded-lg mb-8">
+          <p className="text-center font-medium">
+            Sorting is paused. You can reset the sorting process.
+          </p>
+        </div>
+      )}
 
       {/* Legend */}
       <div className="flex flex-wrap gap-4 text-sm text-slate-600 justify-center">
