@@ -8,8 +8,8 @@ function App() {
   return (
     <>
       {/* <BubbleSortVisualizer /> */}
-      <InsertionSortVisualizer/>
-      {/* <SelectionSortVisualizer/> */}
+      {/* <InsertionSortVisualizer/> */}
+      <SelectionSortVisualizer/>
       
     </>
   );

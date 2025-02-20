@@ -131,6 +131,8 @@ const SelectionSortVisualizer = () => {
     } else {
       setPaused(true);
       pausedRef.current = true;
+      generateArray(); // Generate new array when paused
+      alert("Sorting paused. Click the 'Reset' button to reset the array.");
     }
   };
 
@@ -188,11 +190,11 @@ const SelectionSortVisualizer = () => {
           {array.map((value, idx) => (
             <div
               key={idx}
-              className={`flex flex-col items-center justify-end transition-all duration-300 
-                ${idx === minIndex ? 'bg-red-500' : 
-                  idx === currentIndex ? 'bg-yellow-500' : 
-                  sortedIndices.includes(idx) ? 'bg-green-500' : 
-                  'bg-blue-500'} 
+              className={`flex flex-col items-center justify-end transition-all duration-300
+                ${idx === minIndex ? 'bg-red-500' :
+                  idx === currentIndex ? 'bg-yellow-500' :
+                  sortedIndices.includes(idx) ? 'bg-green-500' :
+                  'bg-blue-500'}
                 rounded-t-lg shadow-md`}
               style={{ width: '40px', height: `${value * 3}px` }}
             >
@@ -207,7 +209,7 @@ const SelectionSortVisualizer = () => {
         <button
           onClick={generateArray}
           disabled={sorting}
-          className="px-6 py-3 bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-400 
+          className="px-6 py-3 bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-400
                    text-white font-medium rounded-lg transition-colors duration-200
                    disabled:cursor-not-allowed flex items-center gap-2"
         >
@@ -216,7 +218,7 @@ const SelectionSortVisualizer = () => {
         </button>
         <button
           onClick={handleSortingControl}
-          className={`px-6 py-3 ${sorting && !paused ? 'bg-yellow-500 hover:bg-yellow-600' : 
+          className={`px-6 py-3 ${sorting && !paused ? 'bg-yellow-500 hover:bg-yellow-600' :
                                  paused ? 'bg-green-500 hover:bg-green-600' :
                                  'bg-violet-500 hover:bg-violet-600'}
                    text-white font-medium rounded-lg transition-colors duration-200
@@ -227,7 +229,7 @@ const SelectionSortVisualizer = () => {
         </button>
         <button
           onClick={() => resetState()}
-          className="px-6 py-3 bg-blue-500 hover:bg-blue-600 
+          className="px-6 py-3 bg-blue-500 hover:bg-blue-600
                    text-white font-medium rounded-lg transition-colors duration-200
                    flex items-center gap-2"
         >
