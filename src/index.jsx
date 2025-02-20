@@ -7,8 +7,8 @@ import SelectionSortVisualizer from "./components/SelectionSortVisualizer";
 function App() {
   return (
     <>
-      <BubbleSortVisualizer />
-      {/* <InsertionSortVisualizer/> */}
+      {/* <BubbleSortVisualizer /> */}
+      <InsertionSortVisualizer/>
       {/* <SelectionSortVisualizer/> */}
       
     </>

@@ -12,10 +12,12 @@
   "type": "commonjs",
   "dependencies": {
     "@tailwindcss/postcss": "^4.0.7",
+    "framer-motion": "^12.4.5",
     "parcel": "^2.13.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-icons": "^5.5.0",
+    "react-toastify": "^11.0.3",
     "react-tooltip": "^5.28.0",
     "tailwindcss": "^4.0.7"
   },
