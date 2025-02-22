@@ -4,6 +4,8 @@ import BubbleSortVisualizer from "./components/BubbleSortVisualizer";
 import InsertionSortVisualizer from "./components/InsertionSortVisualizer";
 import SelectionSortVisualizer from "./components/SelectionSortVisualizer";
 import MergeSortVisualizer from "./components/MergeSortVisualizer";
+import QuickSortVisualizer from "./components/QuickSortVisualizer";
+
 
 function App() {
   return (
@@ -11,7 +13,8 @@ function App() {
       {/* <BubbleSortVisualizer /> */}
       {/* <InsertionSortVisualizer/> */}
       {/* <SelectionSortVisualizer/> */}
-      <MergeSortVisualizer />
+      {/* <MergeSortVisualizer /> */}
+    <QuickSortVisualizer />
       
     </>
   );
