@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 const MergeSortVisualizer = () => {
   const [array, setArray] = useState([]);
@@ -12,6 +12,7 @@ const MergeSortVisualizer = () => {
   });
   const [sortedRanges, setSortedRanges] = useState([]);
   const [isSorting, setIsSorting] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [codeLines] = useState([
     "function mergeSort(arr, left, right) {",
     "  if (left >= right) return;",
@@ -39,6 +40,9 @@ const MergeSortVisualizer = () => {
   const [speed, setSpeed] = useState(1000);
   const [explanation, setExplanation] = useState('Click "Start Sorting" to begin');
 
+  const shouldStop = useRef(false);
+  const pauseResume = useRef({ isPaused: false, resolve: null });
+
   useEffect(() => initializeArray(), []);
 
   const initializeArray = () => {
@@ -54,6 +58,23 @@ const MergeSortVisualizer = () => {
       splitStack: []
     });
     setExplanation('New array generated. Ready to sort!');
+    shouldStop.current = false;
+    setIsPaused(false);
+  };
+
+  const wait = async (ms) => {
+    let elapsed = 0;
+    const step = 50;
+    while (elapsed < ms && !shouldStop.current) {
+      if (pauseResume.current.isPaused) {
+        await new Promise(resolve => {
+          pauseResume.current.resolve = resolve;
+        });
+      }
+      await new Promise(r => setTimeout(r, step));
+      elapsed += step;
+      if (shouldStop.current) break;
+    }
   };
 
   const animateSplit = async (left, right) => {
@@ -62,7 +83,7 @@ const MergeSortVisualizer = () => {
       splitStack: [...prev.splitStack, { left, right }]
     }));
     setExplanation(`Splitting array from index ${left} to ${right}`);
-    await new Promise(resolve => setTimeout(resolve, speed/2));
+    await wait(speed/2);
   };
 
   const animateCompare = (leftValue, rightValue) => {
@@ -70,6 +91,8 @@ const MergeSortVisualizer = () => {
   };
 
   const merge = async (arr, left, mid, right) => {
+    if (shouldStop.current) return;
+    
     setHighlightedLine(8);
     setAnimationState(prev => ({
       ...prev,
@@ -78,12 +101,12 @@ const MergeSortVisualizer = () => {
       right: arr.slice(mid + 1, right + 1)
     }));
     setExplanation(`Merging elements from ${left} to ${right}`);
-    await new Promise(resolve => setTimeout(resolve, speed));
+    await wait(speed);
 
     let i = 0, j = 0;
     const temp = [];
     
-    while (i <= mid - left && j <= right - mid - 1) {
+    while (i <= mid - left && j <= right - mid - 1 && !shouldStop.current) {
       setHighlightedLine(10);
       const leftVal = arr[left + i];
       const rightVal = arr[mid + 1 + j];
@@ -93,7 +116,9 @@ const MergeSortVisualizer = () => {
         ...prev,
         comparing: [left + i, mid + 1 + j]
       }));
-      await new Promise(resolve => setTimeout(resolve, speed));
+      await wait(speed);
+
+      if (shouldStop.current) break;
 
       if (leftVal <= rightVal) {
         temp.push(leftVal);
@@ -108,30 +133,32 @@ const MergeSortVisualizer = () => {
         merged: [...temp],
         comparing: []
       }));
-      await new Promise(resolve => setTimeout(resolve, speed));
+      await wait(speed);
     }
 
-    while (i <= mid - left) {
+    while (i <= mid - left && !shouldStop.current) {
       temp.push(arr[left + i]);
       i++;
       setAnimationState(prev => ({ ...prev, merged: [...temp] }));
-      await new Promise(resolve => setTimeout(resolve, speed/2));
+      await wait(speed/2);
     }
 
-    while (j <= right - mid - 1) {
+    while (j <= right - mid - 1 && !shouldStop.current) {
       temp.push(arr[mid + 1 + j]);
       j++;
       setAnimationState(prev => ({ ...prev, merged: [...temp] }));
-      await new Promise(resolve => setTimeout(resolve, speed/2));
+      await wait(speed/2);
     }
 
-    const newArray = [...arr];
-    for (let k = 0; k < temp.length; k++) {
-      newArray[left + k] = temp[k];
+    if (!shouldStop.current) {
+      const newArray = [...arr];
+      for (let k = 0; k < temp.length; k++) {
+        newArray[left + k] = temp[k];
+      }
+      setArray(newArray);
+      setSortedRanges(prev => [...prev, [left, right]]);
     }
-    setArray(newArray);
-    setSortedRanges(prev => [...prev, [left, right]]);
-    
+
     setAnimationState(prev => ({
       ...prev,
       currentMerge: null,
@@ -141,64 +168,99 @@ const MergeSortVisualizer = () => {
   };
 
   const mergeSort = async (arr, left = 0, right = arr.length - 1) => {
-    if (left >= right) return;
+    if (left >= right || shouldStop.current) return;
     
-    setHighlightedLine(1);
-    await animateSplit(left, right);
-    
-    const mid = Math.floor((left + right) / 2);
-    
-    setHighlightedLine(3);
-    await mergeSort(arr, left, mid);
-    
-    setHighlightedLine(4);
-    await mergeSort(arr, mid + 1, right);
-    
-    setHighlightedLine(5);
-    await merge(arr, left, mid, right);
+    try {
+      setHighlightedLine(1);
+      await animateSplit(left, right);
+      
+      const mid = Math.floor((left + right) / 2);
+      
+      setHighlightedLine(3);
+      await mergeSort(arr, left, mid);
+      
+      setHighlightedLine(4);
+      await mergeSort(arr, mid + 1, right);
+      
+      setHighlightedLine(5);
+      await merge(arr, left, mid, right);
+    } catch (e) {
+      if (shouldStop.current) return;
+    }
   };
 
   const startSorting = async () => {
     setIsSorting(true);
     setExplanation('Starting merge sort...');
+    shouldStop.current = false;
     await mergeSort([...array]);
-    setExplanation('Sorting complete!');
+    setExplanation(shouldStop.current ? 'Sorting stopped' : 'Sorting complete!');
     setIsSorting(false);
     setHighlightedLine(-1);
   };
 
+  const handleReset = () => {
+    shouldStop.current = true;
+    setIsSorting(false);
+    initializeArray();
+  };
+
+  const togglePause = () => {
+    if (!isPaused) {
+      setIsPaused(true);
+      pauseResume.current.isPaused = true;
+    } else {
+      setIsPaused(false);
+      pauseResume.current.isPaused = false;
+      if (pauseResume.current.resolve) {
+        pauseResume.current.resolve();
+        pauseResume.current.resolve = null;
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8 flex flex-col">
-      <div className="flex gap-4 mb-8">
+      <div className="flex gap-4 mb-8 flex-wrap items-center">
         <button
           onClick={startSorting}
           disabled={isSorting}
-          className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700 disabled:bg-gray-600"
+          className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700 disabled:bg-gray-600 transition-colors"
         >
           {isSorting ? 'Sorting...' : 'Start Sorting'}
         </button>
         <button
-          onClick={initializeArray}
-          disabled={isSorting}
-          className="px-4 py-2 bg-green-600 rounded hover:bg-green-700 disabled:bg-gray-600"
+          onClick={togglePause}
+          disabled={!isSorting}
+          className="px-4 py-2 bg-yellow-600 rounded hover:bg-yellow-700 transition-colors"
+        >
+          {isPaused ? 'Resume' : 'Pause'}
+        </button>
+        <button
+          onClick={handleReset}
+          className="px-4 py-2 bg-green-600 rounded hover:bg-green-700 transition-colors"
         >
           Reset Array
         </button>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 bg-gray-800 px-4 py-2 rounded">
           <span>Speed:</span>
           <input
             type="range"
             min="100"
             max="2000"
             value={speed}
-            onChange={(e) => setSpeed(e.target.value)}
-            className="w-32"
+            onChange={(e) => setSpeed(Number(e.target.value))}
+            className="w-32 accent-blue-500"
           />
         </div>
+        {isPaused && (
+          <div className="ml-4 px-3 py-1 bg-yellow-600 rounded-full text-sm animate-pulse">
+            Paused
+          </div>
+        )}
       </div>
 
       <div className="flex gap-8 flex-1">
-        {/* Visualization Section */}
         <div className="flex-1 bg-gray-800 p-6 rounded-lg">
           <div className="mb-4 h-12 flex items-center justify-center text-lg font-semibold">
             {explanation}
@@ -243,7 +305,6 @@ const MergeSortVisualizer = () => {
             })}
           </div>
 
-          {/* Merge Process Visualization */}
           {animationState.currentMerge && (
             <div className="mt-8 p-4 bg-gray-700 rounded-lg">
               <h3 className="text-lg mb-2">Current Merge</h3>
@@ -283,7 +344,6 @@ const MergeSortVisualizer = () => {
           )}
         </div>
 
-        {/* Code Section */}
         <div className="w-1/3 bg-gray-800 p-6 rounded-lg overflow-auto">
           <pre className="font-mono text-sm">
             {codeLines.map((line, index) => (
