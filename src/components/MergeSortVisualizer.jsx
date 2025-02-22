@@ -1,200 +1,299 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 
 const MergeSortVisualizer = () => {
   const [array, setArray] = useState([]);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [speed, setSpeed] = useState(100);
-  const [currentStep, setCurrentStep] = useState(null);
-  const [explanation, setExplanation] = useState('');
+  const [animationState, setAnimationState] = useState({
+    left: [],
+    right: [],
+    comparing: [],
+    merged: [],
+    currentMerge: null,
+    splitStack: []
+  });
+  const [sortedRanges, setSortedRanges] = useState([]);
+  const [isSorting, setIsSorting] = useState(false);
+  const [codeLines] = useState([
+    "function mergeSort(arr, left, right) {",
+    "  if (left >= right) return;",
+    "  const mid = Math.floor((left + right) / 2);",
+    "  mergeSort(arr, left, mid);",
+    "  mergeSort(arr, mid + 1, right);",
+    "  merge(arr, left, mid, right);",
+    "}",
+    "",
+    "function merge(arr, left, mid, right) {",
+    "  let i = left, j = mid + 1;",
+    "  const temp = [];",
+    "  while (i <= mid && j <= right) {",
+    "    if (arr[i] <= arr[j]) temp.push(arr[i++]);",
+    "    else temp.push(arr[j++]);",
+    "  }",
+    "  while (i <= mid) temp.push(arr[i++]);",
+    "  while (j <= right) temp.push(arr[j++]);",
+    "  for (let k = 0; k < temp.length; k++) {",
+    "    arr[left + k] = temp[k];",
+    "  }",
+    "}"
+  ]);
+  const [highlightedLine, setHighlightedLine] = useState(-1);
+  const [speed, setSpeed] = useState(1000);
+  const [explanation, setExplanation] = useState('Click "Start Sorting" to begin');
 
-  const COLORS = {
-    DEFAULT: '#6366F1',    // Indigo
-    COMPARING: '#EF4444',  // Red
-    SORTED: '#10B981',     // Green
-    ACTIVE: '#F59E0B'      // Amber
-  };
+  useEffect(() => initializeArray(), []);
 
-  const STEPS = {
-    SPLIT: 'SPLIT',
-    COMPARE: 'COMPARE',
-    MERGE_LEFT: 'MERGE_LEFT',
-    MERGE_RIGHT: 'MERGE_RIGHT',
-    MERGE_COMPLETE: 'MERGE_COMPLETE'
-  };
-
-  const generateArray = () => {
-    const newArray = Array.from({ length: 12 }, () => Math.floor(Math.random() * 50) + 10);
+  const initializeArray = () => {
+    const newArray = Array.from({ length: 10 }, () => Math.floor(Math.random() * 50) + 10);
     setArray(newArray);
-    setCurrentStep(null);
-    setExplanation('Generate a new array to start sorting.');
+    setSortedRanges([]);
+    setAnimationState({
+      left: [],
+      right: [],
+      comparing: [],
+      merged: [],
+      currentMerge: null,
+      splitStack: []
+    });
+    setExplanation('New array generated. Ready to sort!');
   };
 
-  useEffect(() => {
-    generateArray();
-  }, []);
-
-  const sleep = (ms) => {
-    return new Promise(resolve => setTimeout(resolve, ms));
+  const animateSplit = async (left, right) => {
+    setAnimationState(prev => ({
+      ...prev,
+      splitStack: [...prev.splitStack, { left, right }]
+    }));
+    setExplanation(`Splitting array from index ${left} to ${right}`);
+    await new Promise(resolve => setTimeout(resolve, speed/2));
   };
 
-  const mergeSort = async () => {
-    if (isAnimating) return;
-
-    setIsAnimating(true);
-    const animations = [];
-    const auxArray = array.slice();
-    await mergeSortHelper(array.slice(), 0, array.length - 1, auxArray, animations);
-
-    for (const animation of animations) {
-      const [type, indices, values] = animation;
-      const bars = document.getElementsByClassName('array-bar');
-
-      if (type === 'compare') {
-        setCurrentStep(STEPS.COMPARE);
-        setExplanation(`Comparing elements at indices ${indices[0]} and ${indices[1]}.`);
-        bars[indices[0]].style.backgroundColor = COLORS.COMPARING;
-        bars[indices[1]].style.backgroundColor = COLORS.COMPARING;
-        await sleep(speed);
-        bars[indices[0]].style.backgroundColor = COLORS.DEFAULT;
-        bars[indices[1]].style.backgroundColor = COLORS.DEFAULT;
-      } else if (type === 'merge') {
-        setCurrentStep(values[1] <= indices[0] ? STEPS.MERGE_LEFT : STEPS.MERGE_RIGHT);
-        setExplanation(`Merging element ${values[0]} into position ${indices[0]}.`);
-        bars[indices[0]].style.height = `${values[0] * 3}px`;
-        bars[indices[0]].style.backgroundColor = COLORS.SORTED;
-        array[indices[0]] = values[0];
-        setArray([...array]);
-        await sleep(speed);
-      }
-    }
-
-    setCurrentStep(STEPS.MERGE_COMPLETE);
-    setExplanation('Merge sort complete! The array is now sorted.');
-    setIsAnimating(false);
+  const animateCompare = (leftValue, rightValue) => {
+    setExplanation(`Comparing ${leftValue} and ${rightValue}`);
   };
 
-  const mergeSortHelper = async (mainArray, start, end, auxArray, animations) => {
-    if (start === end) return;
+  const merge = async (arr, left, mid, right) => {
+    setHighlightedLine(8);
+    setAnimationState(prev => ({
+      ...prev,
+      currentMerge: { left, mid, right },
+      left: arr.slice(left, mid + 1),
+      right: arr.slice(mid + 1, right + 1)
+    }));
+    setExplanation(`Merging elements from ${left} to ${right}`);
+    await new Promise(resolve => setTimeout(resolve, speed));
 
-    const middle = Math.floor((start + end) / 2);
-    setCurrentStep(STEPS.SPLIT);
-    setExplanation(`Splitting array from index ${start} to ${end}.`);
-    await mergeSortHelper(auxArray, start, middle, mainArray, animations);
-    await mergeSortHelper(auxArray, middle + 1, end, mainArray, animations);
-    await merge(mainArray, start, middle, end, auxArray, animations);
-  };
+    let i = 0, j = 0;
+    const temp = [];
+    
+    while (i <= mid - left && j <= right - mid - 1) {
+      setHighlightedLine(10);
+      const leftVal = arr[left + i];
+      const rightVal = arr[mid + 1 + j];
+      animateCompare(leftVal, rightVal);
+      
+      setAnimationState(prev => ({
+        ...prev,
+        comparing: [left + i, mid + 1 + j]
+      }));
+      await new Promise(resolve => setTimeout(resolve, speed));
 
-  const merge = async (mainArray, start, middle, end, auxArray, animations) => {
-    let k = start;
-    let i = start;
-    let j = middle + 1;
-
-    while (i <= middle && j <= end) {
-      animations.push(['compare', [i, j], []]);
-      if (auxArray[i] <= auxArray[j]) {
-        animations.push(['merge', [k], [auxArray[i], i]]);
-        mainArray[k++] = auxArray[i++];
+      if (leftVal <= rightVal) {
+        temp.push(leftVal);
+        i++;
       } else {
-        animations.push(['merge', [k], [auxArray[j], j]]);
-        mainArray[k++] = auxArray[j++];
+        temp.push(rightVal);
+        j++;
       }
+
+      setAnimationState(prev => ({
+        ...prev,
+        merged: [...temp],
+        comparing: []
+      }));
+      await new Promise(resolve => setTimeout(resolve, speed));
     }
 
-    while (i <= middle) {
-      animations.push(['merge', [k], [auxArray[i], i]]);
-      mainArray[k++] = auxArray[i++];
+    while (i <= mid - left) {
+      temp.push(arr[left + i]);
+      i++;
+      setAnimationState(prev => ({ ...prev, merged: [...temp] }));
+      await new Promise(resolve => setTimeout(resolve, speed/2));
     }
 
-    while (j <= end) {
-      animations.push(['merge', [k], [auxArray[j], j]]);
-      mainArray[k++] = auxArray[j++];
+    while (j <= right - mid - 1) {
+      temp.push(arr[mid + 1 + j]);
+      j++;
+      setAnimationState(prev => ({ ...prev, merged: [...temp] }));
+      await new Promise(resolve => setTimeout(resolve, speed/2));
     }
+
+    const newArray = [...arr];
+    for (let k = 0; k < temp.length; k++) {
+      newArray[left + k] = temp[k];
+    }
+    setArray(newArray);
+    setSortedRanges(prev => [...prev, [left, right]]);
+    
+    setAnimationState(prev => ({
+      ...prev,
+      currentMerge: null,
+      merged: [],
+      splitStack: prev.splitStack.slice(0, -1)
+    }));
+  };
+
+  const mergeSort = async (arr, left = 0, right = arr.length - 1) => {
+    if (left >= right) return;
+    
+    setHighlightedLine(1);
+    await animateSplit(left, right);
+    
+    const mid = Math.floor((left + right) / 2);
+    
+    setHighlightedLine(3);
+    await mergeSort(arr, left, mid);
+    
+    setHighlightedLine(4);
+    await mergeSort(arr, mid + 1, right);
+    
+    setHighlightedLine(5);
+    await merge(arr, left, mid, right);
+  };
+
+  const startSorting = async () => {
+    setIsSorting(true);
+    setExplanation('Starting merge sort...');
+    await mergeSort([...array]);
+    setExplanation('Sorting complete!');
+    setIsSorting(false);
+    setHighlightedLine(-1);
   };
 
   return (
-    <div className="flex flex-col lg:flex-row h-screen bg-gray-900 text-white p-4">
-      <div className="lg:w-1/2 p-4">
-        <div className="mb-4 space-x-4">
-          <button
-            onClick={generateArray}
-            disabled={isAnimating}
-            className="bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white font-bold py-2 px-4 rounded"
-          >
-            Generate New Array
-          </button>
-          <button
-            onClick={mergeSort}
-            disabled={isAnimating}
-            className="bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-bold py-2 px-4 rounded"
-          >
-            Start Sorting
-          </button>
-        </div>
-
-        <div className="flex items-center mb-4">
-          <label className="mr-2">Animation Speed:</label>
+    <div className="min-h-screen bg-gray-900 text-white p-8 flex flex-col">
+      <div className="flex gap-4 mb-8">
+        <button
+          onClick={startSorting}
+          disabled={isSorting}
+          className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700 disabled:bg-gray-600"
+        >
+          {isSorting ? 'Sorting...' : 'Start Sorting'}
+        </button>
+        <button
+          onClick={initializeArray}
+          disabled={isSorting}
+          className="px-4 py-2 bg-green-600 rounded hover:bg-green-700 disabled:bg-gray-600"
+        >
+          Reset Array
+        </button>
+        <div className="flex items-center gap-2">
+          <span>Speed:</span>
           <input
             type="range"
-            min="50"
-            max="1000"
-            step="50"
+            min="100"
+            max="2000"
             value={speed}
-            onChange={(e) => setSpeed(Number(e.target.value))}
-            className="slider"
+            onChange={(e) => setSpeed(e.target.value)}
+            className="w-32"
           />
-          <span className="ml-2">{speed} ms</span>
-        </div>
-
-        <div className="flex items-end justify-center h-96 bg-gray-800 rounded-lg p-4">
-          {array.map((value, idx) => (
-            <div
-              key={idx}
-              className="array-bar w-8 mx-1 rounded-t-md transition-all duration-200 flex flex-col items-center justify-end"
-              style={{
-                height: `${value * 3}px`,
-                backgroundColor: COLORS.DEFAULT
-              }}
-            >
-              <span className="text-xs mb-1">{value}</span>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-4 p-4 bg-gray-800 rounded-lg">
-          <h2 className="text-lg font-semibold mb-2">Current Step:</h2>
-          <p className="text-sm">{explanation}</p>
         </div>
       </div>
 
-      <div className="lg:w-1/2 p-4">
-        <div className="bg-gray-800 p-4 rounded-lg">
-          <pre className="text-sm overflow-x-auto">
-            <code className="text-green-400 block whitespace-pre">
-              {`// Merge Sort Implementation
+      <div className="flex gap-8 flex-1">
+        {/* Visualization Section */}
+        <div className="flex-1 bg-gray-800 p-6 rounded-lg">
+          <div className="mb-4 h-12 flex items-center justify-center text-lg font-semibold">
+            {explanation}
+          </div>
+          
+          <div className="relative flex items-end gap-2 h-64 mb-8">
+            {array.map((value, index) => {
+              const isSorted = sortedRanges.some(([start, end]) => index >= start && index <= end);
+              const isComparing = animationState.comparing.includes(index);
+              const inMergeRange = animationState.currentMerge?.left <= index && 
+                                  index <= animationState.currentMerge?.right;
+              const isLeftArray = animationState.currentMerge && 
+                                index <= animationState.currentMerge.mid;
+              const isRightArray = animationState.currentMerge && 
+                                 index > animationState.currentMerge.mid;
 
-function mergeSort(arr) {
-  ${currentStep === STEPS.SPLIT ? '→' : ' '} if (arr.length <= 1) return arr;
-  ${currentStep === STEPS.SPLIT ? '→' : ' '} const mid = Math.floor(arr.length / 2);
-  ${currentStep === STEPS.SPLIT ? '→' : ' '} const left = mergeSort(arr.slice(0, mid));
-  ${currentStep === STEPS.SPLIT ? '→' : ' '} const right = mergeSort(arr.slice(mid));
+              return (
+                <div
+                  key={index}
+                  className={`flex-1 text-center py-2 rounded-t transition-all relative
+                    ${isSorted ? 'bg-green-500' : ''}
+                    ${isComparing ? 'bg-red-500 animate-pulse' : ''}
+                    ${inMergeRange ? (isLeftArray ? 'bg-orange-300' : 'bg-pink-300') : ''}
+                    ${!isSorted && !inMergeRange ? 'bg-blue-500' : ''}
+                  `}
+                  style={{ height: `${value}%` }}
+                >
+                  <span className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 text-xs">
+                    {value}
+                  </span>
+                  {animationState.splitStack.map(({ left, right }, i) => (
+                    index >= left && index <= right && (
+                      <div
+                        key={i}
+                        className="absolute top-0 left-0 right-0 border-2 border-yellow-400"
+                        style={{ height: `${100 + i * 10}%` }}
+                      />
+                    )
+                  ))}
+                </div>
+              );
+            })}
+          </div>
 
-  // Merge process
-  let result = [];
-  let i = 0, j = 0;
+          {/* Merge Process Visualization */}
+          {animationState.currentMerge && (
+            <div className="mt-8 p-4 bg-gray-700 rounded-lg">
+              <h3 className="text-lg mb-2">Current Merge</h3>
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <h4 className="text-orange-300 mb-2">Left Array</h4>
+                  <div className="flex gap-2">
+                    {animationState.left.map((num, i) => (
+                      <div key={i} className="bg-orange-300 p-2 rounded">
+                        {num}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-pink-300 mb-2">Right Array</h4>
+                  <div className="flex gap-2">
+                    {animationState.right.map((num, i) => (
+                      <div key={i} className="bg-pink-300 p-2 rounded">
+                        {num}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-green-300 mb-2">Merged Result</h4>
+                  <div className="flex gap-2">
+                    {animationState.merged.map((num, i) => (
+                      <div key={i} className="bg-green-300 p-2 rounded">
+                        {num}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
 
-  ${currentStep === STEPS.COMPARE ? '→' : ' '} while (i < left.length && j < right.length) {
-    ${currentStep === STEPS.COMPARE ? '→' : ' '}   if (left[i] <= right[j]) {
-    ${currentStep === STEPS.MERGE_LEFT ? '→' : ' '}     result.push(left[i++]);
-    ${currentStep === STEPS.MERGE_RIGHT ? '→' : ' '}   } else {
-    ${currentStep === STEPS.MERGE_RIGHT ? '→' : ' '}     result.push(right[j++]);
-    }
-  }
-
-  ${currentStep === STEPS.MERGE_COMPLETE ? '→' : ' '} return result
-    .concat(left.slice(i))
-    .concat(right.slice(j));
-}`}
-            </code>
+        {/* Code Section */}
+        <div className="w-1/3 bg-gray-800 p-6 rounded-lg overflow-auto">
+          <pre className="font-mono text-sm">
+            {codeLines.map((line, index) => (
+              <div
+                key={index}
+                className={`p-1 rounded ${highlightedLine === index ? 'bg-gray-600' : ''}`}
+              >
+                {line}
+              </div>
+            ))}
           </pre>
         </div>
       </div>
