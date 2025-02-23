@@ -28,6 +28,8 @@ const BubbleSortVisualizer = () => {
   const sortingRef = useRef(null);
   const startTimeRef = useRef(null);
   const cancelSortRef = useRef(false);
+  // New ref to store current indices for resuming the sort
+  const indicesRef = useRef({ i: 0, j: 0 });
 
   // Generate new array and cancel any ongoing sort
   const newGenerateArray = () => {
@@ -35,6 +37,8 @@ const BubbleSortVisualizer = () => {
       clearTimeout(sortingRef.current);
     }
     cancelSortRef.current = true;
+    // Reset resume indices since it's a new array
+    indicesRef.current = { i: 0, j: 0 };
     const newArr = Array.from({ length: arraySize }, () =>
       Math.floor(Math.random() * 99) + 1
     );
@@ -54,6 +58,8 @@ const BubbleSortVisualizer = () => {
       clearTimeout(sortingRef.current);
     }
     cancelSortRef.current = true;
+    // Reset resume indices when resetting
+    indicesRef.current = { i: 0, j: 0 };
     setArray([...originalArray]);
     setSorting(false);
     setSwapping([-1, -1]);
@@ -83,28 +89,38 @@ const BubbleSortVisualizer = () => {
     setStats({ comparisons, swaps, timeElapsed });
   };
 
-  // Bubble sort algorithm with animation checks
+  // Bubble sort algorithm with resume functionality
   const bubbleSort = async () => {
     cancelSortRef.current = false;
-    startTimeRef.current = Date.now();
+    // Only set the start time if it's not already running
+    if (!startTimeRef.current) {
+      startTimeRef.current = Date.now();
+    }
     setSorting(true);
-    let comparisons = 0;
-    let swaps = 0;
+    // Continue comparisons and swaps from previous state
+    let comparisons = stats.comparisons;
+    let swaps = stats.swaps;
     const arr = [...array];
     const n = arr.length;
 
-    for (let i = 0; i < n - 1; i++) {
-      if (cancelSortRef.current) break;
+    // Resume from the stored outer loop index (i)
+    for (let i = indicesRef.current.i; i < n - 1; i++) {
+      if (cancelSortRef.current) {
+        indicesRef.current.i = i;
+        return;
+      }
       let swapped = false;
-
-      for (let j = 0; j < n - i - 1; j++) {
-        if (cancelSortRef.current) break;
-
+      // Resume from stored inner loop index (j) if available
+      for (let j = indicesRef.current.j; j < n - i - 1; j++) {
+        if (cancelSortRef.current) {
+          indicesRef.current.i = i;
+          indicesRef.current.j = j;
+          return;
+        }
         setSwapping([j, j + 1]);
         comparisons++;
         updateStats(comparisons, swaps);
         await sleep(speed);
-
         if (arr[j] > arr[j + 1]) {
           // Animate swap
           setSwapPositions({
@@ -124,19 +140,23 @@ const BubbleSortVisualizer = () => {
           await sleep(speed / 2);
         }
       }
-
+      // After completing the inner loop, reset the inner index for the next iteration
+      indicesRef.current.j = 0;
       setSortedIndices((prev) => [...prev, n - 1 - i]);
       if (!swapped) {
-        setSortedIndices(Array.from({ length: n }, (_, i) => i));
+        setSortedIndices(Array.from({ length: n }, (_, idx) => idx));
+        indicesRef.current = { i: n, j: 0 };
         break;
       }
     }
 
     setSwapping([-1, -1]);
     setSorting(false);
+    // Reset resume indices after sort completion
+    indicesRef.current = { i: 0, j: 0 };
   };
 
-  // Toggle sort on/off
+  // Toggle sort on/off with resume support
   const newStartStopSorting = async () => {
     if (!sorting) {
       cancelSortRef.current = false;

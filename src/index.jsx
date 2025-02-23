@@ -12,12 +12,13 @@ import TreeTraversalVisualizer from "./components/TreeTraversalVisualizer";
 function App() {
   return (
     <>
-      <BubbleSortVisualizer />
+      {/* <BubbleSortVisualizer /> */}
       {/* <InsertionSortVisualizer/> */}
-      {/* <SelectionSortVisualizer/> */}
+        {/* <TreeTraversalVisualizer /> */}
+      <SelectionSortVisualizer/>
       {/* <MergeSortVisualizer /> */}
       {/* <QuickSortVisualizer /> */}
-      {/* <TreeTraversalVisualizer /> */}
+    
       
     </>
   );
