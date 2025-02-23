@@ -151,28 +151,32 @@ const BubbleSortVisualizer = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-gradient-to-br from-indigo-100 to-blue-200">
+    <div className="h-screen flex flex-col bg-gradient-to-br from-indigo-100 to-blue-200">
       {/* Fixed Header */}
-      <header className="h-16 bg-indigo-700 flex items-center justify-center text-white shadow">
+      <header className="h-16 bg-indigo-700 flex items-center justify-center text-white shadow flex-shrink-0">
         <h1 className="text-2xl font-bold">Bubble Sort Visualizer</h1>
       </header>
 
-      {/* Main content area split into two columns */}
-      <div className="flex flex-grow overflow-hidden">
+      {/* Main content area */}
+      <div className="flex flex-col md:flex-row flex-grow overflow-hidden">
         {/* Left Column: Info, Stats, Controls & Legend */}
-        <div className="w-1/3 p-2 flex flex-col space-y-2 overflow-hidden">
+        <div className="w-full md:w-1/3 p-2 flex flex-col space-y-2 overflow-y-auto">
           {/* Info Panel */}
-          <div className="flex-1 bg-white shadow rounded p-3 overflow-hidden">
+          <div className="flex-1 bg-white shadow rounded p-3">
             <h2 className="text-lg font-bold text-gray-800 mb-1">About Bubble Sort</h2>
             <p className="text-gray-700 text-xs">
               Bubble Sort repeatedly steps through the list, compares adjacent elements, and swaps them if needed.
             </p>
-            <p className="text-gray-700 text-xs mt-1"><strong>Time Complexity:</strong> O(n²)</p>
-            <p className="text-gray-700 text-xs mt-1"><strong>Space Complexity:</strong> O(1)</p>
+            <p className="text-gray-700 text-xs mt-1">
+              <strong>Time Complexity:</strong> O(n²)
+            </p>
+            <p className="text-gray-700 text-xs mt-1">
+              <strong>Space Complexity:</strong> O(1)
+            </p>
           </div>
 
           {/* Stats Dashboard */}
-          <div className="flex-1 bg-white shadow rounded p-3 overflow-hidden">
+          <div className="flex-1 bg-white shadow rounded p-3">
             <div className="grid grid-cols-2 gap-2">
               <div className="flex flex-col items-center">
                 <span className="text-xl">🔄</span>
@@ -198,7 +202,7 @@ const BubbleSortVisualizer = () => {
           </div>
 
           {/* Controls */}
-          <div className="flex-1 bg-white shadow rounded p-3 overflow-hidden">
+          <div className="flex-1 bg-white shadow rounded p-3">
             <div className="flex flex-wrap justify-center gap-2">
               <button
                 onClick={newGenerateArray}
@@ -257,7 +261,7 @@ const BubbleSortVisualizer = () => {
           </div>
 
           {/* Legend */}
-          <div className="flex-1 bg-white shadow rounded p-3 flex items-center justify-center overflow-hidden">
+          <div className="flex-1 bg-white shadow rounded p-3 flex items-center justify-center">
             <div className="flex flex-col items-center gap-1">
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 bg-yellow-500 rounded"></div>
@@ -276,7 +280,7 @@ const BubbleSortVisualizer = () => {
         </div>
 
         {/* Right Column: Visualization */}
-        <div className="w-2/3 p-2 overflow-hidden">
+        <div className="w-full md:w-2/3 p-2 overflow-auto">
           <div className="h-full bg-white shadow rounded p-2 flex items-end justify-center">
             <div className="w-full flex items-end justify-center gap-1">
               {array.map((value, idx) => (
