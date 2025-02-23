@@ -5,6 +5,8 @@ import InsertionSortVisualizer from "./components/InsertionSortVisualizer";
 import SelectionSortVisualizer from "./components/SelectionSortVisualizer";
 import MergeSortVisualizer from "./components/MergeSortVisualizer";
 import QuickSortVisualizer from "./components/QuickSortVisualizer";
+import TreeTraversalVisualizer from "./components/TreeTraversalVisualizer";
+
 
 
 function App() {
@@ -14,7 +16,8 @@ function App() {
       {/* <InsertionSortVisualizer/> */}
       {/* <SelectionSortVisualizer/> */}
       {/* <MergeSortVisualizer /> */}
-    <QuickSortVisualizer />
+      {/* <QuickSortVisualizer /> */}
+      <TreeTraversalVisualizer />
       
     </>
   );
