@@ -1,16 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
 
 const MergeSortVisualizer = () => {
-  // State Management
   const [array, setArray] = useState([]);
   const [sortedRanges, setSortedRanges] = useState([]);
   const [isSorting, setIsSorting] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [speed, setSpeed] = useState(1000);
   const [highlightedLine, setHighlightedLine] = useState(-1);
-  const [explanation, setExplanation] = useState('Click "Start Sorting" to begin');
-  
-  // Animation State
+  const [stepLog, setStepLog] = useState([]);
+  const [arraySize, setArraySize] = useState(10);
+  const [fullscreen, setFullscreen] = useState(true);
   const [animationState, setAnimationState] = useState({
     left: [],
     right: [],
@@ -20,12 +19,13 @@ const MergeSortVisualizer = () => {
     splitStack: []
   });
 
-  // Refs for pause/resume control
   const shouldStop = useRef(false);
-  const pauseResume = useRef({ isPaused: false, resolve: null });
+  const pauseControl = useRef({ isPaused: false, resolve: null });
+  const arrayRef = useRef(array);
+  const containerRef = useRef(null);
 
-  // Algorithm Code Display
-  const [codeLines] = useState([
+  const borderColors = ['#facc15', '#4ade80', '#60a5fa', '#c084fc', '#f472b6'];
+  const codeLines = [
     "function mergeSort(arr, left, right) {",
     "  if (left >= right) return;",
     "  const mid = Math.floor((left + right) / 2);",
@@ -47,16 +47,45 @@ const MergeSortVisualizer = () => {
     "    arr[left + k] = temp[k];",
     "  }",
     "}"
-  ]);
+  ];
 
-  // Initialize array on component mount
-  useEffect(() => initializeArray(), []);
+  // Initialize on first render and handle cleanup
+  useEffect(() => {
+    resetVisualizer();
+    
+    const handleFullscreenChange = () => {
+      setFullscreen(!!document.fullscreenElement);
+    };
+    
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    
+    // Auto-enter fullscreen on initial load
+    if (containerRef.current && !document.fullscreenElement) {
+      toggleFullscreen();
+    }
+    
+    return () => { 
+      shouldStop.current = true; 
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
 
-  // Helper Functions
-  const initializeArray = () => {
-    const newArray = Array.from({ length: 10 }, () => Math.floor(Math.random() * 50) + 10);
-    setArray(newArray);
+  // Keep array reference updated
+  useEffect(() => {
+    arrayRef.current = array;
+  }, [array]);
+
+  // Generate new array with specified size
+  const generateArray = (size) => {
+    return Array.from({ length: size }, () => Math.floor(Math.random() * 50) + 10);
+  };
+
+  // Reset the visualizer with a new array
+  const resetVisualizer = () => {
+    const newArr = generateArray(arraySize);
+    setArray(newArr);
     setSortedRanges([]);
+    setStepLog([]);
     setAnimationState({
       left: [],
       right: [],
@@ -65,30 +94,59 @@ const MergeSortVisualizer = () => {
       currentMerge: null,
       splitStack: []
     });
-    setExplanation('New array generated. Ready to sort!');
     shouldStop.current = false;
     setIsPaused(false);
+    pauseControl.current = { isPaused: false, resolve: null };
+    setHighlightedLine(-1);
   };
 
-  const wait = async (ms) => {
-    let elapsed = 0;
-    const step = 50;
-    while (elapsed < ms && !shouldStop.current) {
-      if (pauseResume.current.isPaused) {
-        await new Promise(resolve => {
-          pauseResume.current.resolve = resolve;
-        });
+  // Handle array size change
+  const handleSizeChange = (size) => {
+    setArraySize(size);
+    const newArr = generateArray(size);
+    setArray(newArr);
+    setSortedRanges([]);
+  };
+
+  // Toggle fullscreen mode
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      if (containerRef.current.requestFullscreen) {
+        containerRef.current.requestFullscreen();
+      } else if (containerRef.current.webkitRequestFullscreen) {
+        containerRef.current.webkitRequestFullscreen();
+      } else if (containerRef.current.msRequestFullscreen) {
+        containerRef.current.msRequestFullscreen();
       }
-      await new Promise(r => setTimeout(r, step));
-      elapsed += step;
-      if (shouldStop.current) break;
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      } else if (document.msExitFullscreen) {
+        document.msExitFullscreen();
+      }
     }
   };
 
-  // Sorting Algorithm Implementation
+  // Wait function with pause support
+  const wait = async (ms) => {
+    let elapsed = 0;
+    const interval = 50;
+    while (elapsed < ms && !shouldStop.current) {
+      if (pauseControl.current.isPaused) {
+        await new Promise(resolve => { pauseControl.current.resolve = resolve; });
+      }
+      await new Promise(res => setTimeout(res, interval));
+      elapsed += interval;
+    }
+  };
+
+  // Merge function with visualization
   const merge = async (arr, left, mid, right) => {
     if (shouldStop.current) return;
     
+    setStepLog(prev => [...prev, `Merging subarrays [${left}-${mid}] and [${mid+1}-${right}]`]);
     setHighlightedLine(8);
     setAnimationState(prev => ({
       ...prev,
@@ -96,18 +154,17 @@ const MergeSortVisualizer = () => {
       left: arr.slice(left, mid + 1),
       right: arr.slice(mid + 1, right + 1)
     }));
-    setExplanation(`Merging elements from ${left} to ${right}`);
+    
     await wait(speed);
 
     let i = 0, j = 0;
     const temp = [];
-    
-    while (i <= mid - left && j <= right - mid - 1 && !shouldStop.current) {
-      setHighlightedLine(10);
+    while (i <= mid - left && j <= right - mid - 1) {
       const leftVal = arr[left + i];
       const rightVal = arr[mid + 1 + j];
-      setExplanation(`Comparing ${leftVal} and ${rightVal}`);
       
+      setStepLog(prev => [...prev, `Comparing ${leftVal} (index ${left+i}) and ${rightVal} (index ${mid+1+j})`]);
+      setHighlightedLine(12);
       setAnimationState(prev => ({
         ...prev,
         comparing: [left + i, mid + 1 + j]
@@ -115,9 +172,11 @@ const MergeSortVisualizer = () => {
       await wait(speed);
 
       if (leftVal <= rightVal) {
+        setHighlightedLine(13);
         temp.push(leftVal);
         i++;
       } else {
+        setHighlightedLine(14);
         temp.push(rightVal);
         j++;
       }
@@ -127,32 +186,34 @@ const MergeSortVisualizer = () => {
         merged: [...temp],
         comparing: []
       }));
-      await wait(speed);
+      await wait(speed/2);
     }
 
-    while (i <= mid - left && !shouldStop.current) {
+    setHighlightedLine(16);
+    while (i <= mid - left) {
       temp.push(arr[left + i]);
       i++;
       setAnimationState(prev => ({ ...prev, merged: [...temp] }));
-      await wait(speed/2);
+      await wait(speed/4);
     }
 
-    while (j <= right - mid - 1 && !shouldStop.current) {
+    setHighlightedLine(17);
+    while (j <= right - mid - 1) {
       temp.push(arr[mid + 1 + j]);
       j++;
       setAnimationState(prev => ({ ...prev, merged: [...temp] }));
-      await wait(speed/2);
+      await wait(speed/4);
     }
 
-    if (!shouldStop.current) {
-      const newArray = [...arr];
-      for (let k = 0; k < temp.length; k++) {
-        newArray[left + k] = temp[k];
-      }
-      setArray(newArray);
-      setSortedRanges(prev => [...prev, [left, right]]);
+    setHighlightedLine(18);
+    const newArr = [...arr];
+    for (let k = 0; k < temp.length; k++) {
+      newArr[left + k] = temp[k];
+      setArray([...newArr]);
+      await wait(speed/4);
     }
 
+    setSortedRanges(prev => [...prev, [left, right]]);
     setAnimationState(prev => ({
       ...prev,
       currentMerge: null,
@@ -161,150 +222,233 @@ const MergeSortVisualizer = () => {
     }));
   };
 
+  // Recursive mergeSort function with visualization
   const mergeSort = async (arr, left = 0, right = arr.length - 1) => {
     if (left >= right || shouldStop.current) return;
     
-    try {
-      setHighlightedLine(1);
-      setAnimationState(prev => ({
-        ...prev,
-        splitStack: [...prev.splitStack, { left, right }]
-      }));
-      setExplanation(`Splitting array from index ${left} to ${right}`);
-      await wait(speed/2);
-      
-      const mid = Math.floor((left + right) / 2);
-      
-      setHighlightedLine(3);
-      await mergeSort(arr, left, mid);
-      
-      setHighlightedLine(4);
-      await mergeSort(arr, mid + 1, right);
-      
-      setHighlightedLine(5);
-      await merge(arr, left, mid, right);
-    } catch (e) {
-      if (shouldStop.current) return;
-    }
+    setStepLog(prev => [...prev, `Splitting array [${left}-${right}]`]);
+    setHighlightedLine(0);
+    await wait(speed/4);
+    
+    setHighlightedLine(1);
+    await wait(speed/4);
+    
+    setAnimationState(prev => ({
+      ...prev,
+      splitStack: [...prev.splitStack, { left, right }]
+    }));
+
+    const mid = Math.floor((left + right) / 2);
+    setHighlightedLine(2);
+    await wait(speed/4);
+    
+    setHighlightedLine(3);
+    await mergeSort(arr, left, mid);
+    
+    setHighlightedLine(4);
+    await mergeSort(arr, mid + 1, right);
+    
+    setHighlightedLine(5);
+    await merge(arr, left, mid, right);
   };
 
-  // Event Handlers
+  // Start the sorting animation
   const startSorting = async () => {
+    if (isSorting) return;
     setIsSorting(true);
-    setExplanation('Starting merge sort...');
+    setStepLog([]);
     shouldStop.current = false;
     await mergeSort([...array]);
-    setExplanation(shouldStop.current ? 'Sorting stopped' : 'Sorting complete!');
+    if (!shouldStop.current) {
+      setStepLog(prev => [...prev, 'Merge Sort complete!']);
+    }
     setIsSorting(false);
     setHighlightedLine(-1);
   };
 
+  // Reset button handler
   const handleReset = () => {
     shouldStop.current = true;
     setIsSorting(false);
-    initializeArray();
+    resetVisualizer();
   };
 
+  // Toggle pause/resume
   const togglePause = () => {
+    if (!isSorting) return;
     if (!isPaused) {
       setIsPaused(true);
-      pauseResume.current.isPaused = true;
+      pauseControl.current.isPaused = true;
     } else {
       setIsPaused(false);
-      pauseResume.current.isPaused = false;
-      if (pauseResume.current.resolve) {
-        pauseResume.current.resolve();
-        pauseResume.current.resolve = null;
+      pauseControl.current.isPaused = false;
+      if (pauseControl.current.resolve) {
+        pauseControl.current.resolve();
+        pauseControl.current.resolve = null;
       }
     }
   };
 
-  // UI Rendering
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-4 md:p-8 flex flex-col">
-      {/* Control Panel */}
-      <div className="flex flex-col md:flex-row gap-4 mb-8 flex-wrap items-center">
-        <div className="flex flex-wrap gap-4 justify-center w-full md:w-auto">
-          <button
-            onClick={startSorting}
-            disabled={isSorting}
-            className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700 disabled:bg-gray-600 transition-colors text-sm md:text-base"
-          >
-            {isSorting ? 'Sorting...' : 'Start Sorting'}
-          </button>
-          <button
-            onClick={togglePause}
-            disabled={!isSorting}
-            className="px-4 py-2 bg-yellow-600 rounded hover:bg-yellow-700 transition-colors text-sm md:text-base"
-          >
-            {isPaused ? 'Resume' : 'Pause'}
-          </button>
-          <button
-            onClick={handleReset}
-            className="px-4 py-2 bg-green-600 rounded hover:bg-green-700 transition-colors text-sm md:text-base"
-          >
-            Reset Array
-          </button>
-        </div>
-        
-        <div className="flex items-center gap-2 bg-gray-800 px-4 py-2 rounded w-full md:w-auto">
-          <span className="text-sm md:text-base">Speed:</span>
-          <input
-            type="range"
-            min="100"
-            max="2000"
-            value={speed}
-            onChange={(e) => setSpeed(Number(e.target.value))}
-            className="w-24 md:w-32 accent-blue-500"
-          />
-        </div>
-        
-        {isPaused && (
-          <div className="px-3 py-1 bg-yellow-600 rounded-full text-sm animate-pulse">
-            Paused
-          </div>
-        )}
+    <div 
+      ref={containerRef} 
+      className="bg-gray-900 text-white p-4 flex flex-col w-full min-h-screen overflow-hidden"
+    >
+      <header className="text-center mb-6">
+        <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+          Merge Sort Visualizer
+        </h1>
+        <p className="text-gray-300">Visualize the merge sort algorithm step-by-step</p>
+      </header>
+
+      <div className="flex flex-wrap justify-center gap-4 mb-6">
+        <button
+          onClick={startSorting}
+          disabled={isSorting && !isPaused}
+          className="px-6 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 disabled:bg-gray-700 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+        >
+          {isSorting ? (isPaused ? 'Continue' : 'Sorting...') : 'Start Sorting'}
+        </button>
+        <button
+          onClick={togglePause}
+          disabled={!isSorting}
+          className="px-6 py-2 bg-yellow-600 rounded-lg hover:bg-yellow-700 disabled:bg-gray-700 disabled:cursor-not-allowed transition-colors"
+        >
+          {isPaused ? 'Resume' : 'Pause'}
+        </button>
+        <button
+          onClick={handleReset}
+          className="px-6 py-2 bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+        >
+          Reset
+        </button>
+        <button
+          onClick={toggleFullscreen}
+          className="px-6 py-2 bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors"
+        >
+          {fullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+        </button>
       </div>
 
-      {/* Main Content */}
-      <div className="flex flex-col md:flex-row gap-8 flex-1">
-        {/* Visualization Panel */}
-        <div className="flex-1 bg-gray-800 p-4 md:p-6 rounded-lg">
-          <div className="mb-4 h-12 flex items-center justify-center text-sm md:text-lg font-semibold whitespace-normal text-center">
-            {explanation}
+      <div className="flex flex-wrap justify-center gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row items-center gap-2 bg-gray-800 px-4 py-3 rounded-lg">
+          <label className="text-sm font-medium">Speed:</label>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => setSpeed(2000)} 
+              className={`px-3 py-1 rounded text-sm ${speed === 2000 ? 'bg-blue-600' : 'bg-gray-700'}`}
+            >
+              Slow
+            </button>
+            <button 
+              onClick={() => setSpeed(1000)} 
+              className={`px-3 py-1 rounded text-sm ${speed === 1000 ? 'bg-blue-600' : 'bg-gray-700'}`}
+            >
+              Medium
+            </button>
+            <button 
+              onClick={() => setSpeed(500)} 
+              className={`px-3 py-1 rounded text-sm ${speed === 500 ? 'bg-blue-600' : 'bg-gray-700'}`}
+            >
+              Fast
+            </button>
+            <button 
+              onClick={() => setSpeed(250)} 
+              className={`px-3 py-1 rounded text-sm ${speed === 250 ? 'bg-blue-600' : 'bg-gray-700'}`}
+            >
+              Very Fast
+            </button>
+          </div>
+        </div>
+        
+        <div className="flex flex-col sm:flex-row items-center gap-2 bg-gray-800 px-4 py-3 rounded-lg">
+          <label className="text-sm font-medium">Array Size:</label>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => !isSorting && handleSizeChange(5)} 
+              className={`px-3 py-1 rounded text-sm ${arraySize === 5 ? 'bg-blue-600' : 'bg-gray-700'} ${isSorting ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={isSorting}
+            >
+              5
+            </button>
+            <button 
+              onClick={() => !isSorting && handleSizeChange(10)} 
+              className={`px-3 py-1 rounded text-sm ${arraySize === 10 ? 'bg-blue-600' : 'bg-gray-700'} ${isSorting ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={isSorting}
+            >
+              10
+            </button>
+            <button 
+              onClick={() => !isSorting && handleSizeChange(15)} 
+              className={`px-3 py-1 rounded text-sm ${arraySize === 15 ? 'bg-blue-600' : 'bg-gray-700'} ${isSorting ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={isSorting}
+            >
+              15
+            </button>
+            <button 
+              onClick={() => !isSorting && handleSizeChange(20)} 
+              className={`px-3 py-1 rounded text-sm ${arraySize === 20 ? 'bg-blue-600' : 'bg-gray-700'} ${isSorting ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={isSorting}
+            >
+              20
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col lg:flex-row gap-6 flex-1">
+        <div className="flex-1 bg-gray-800 p-6 rounded-xl shadow-xl">
+          <div className="mb-2 flex justify-between items-center">
+            <h3 className="text-lg font-semibold">Visualization</h3>
+            <div className="text-sm bg-gray-700 px-3 py-1 rounded-lg">
+              {isPaused ? 'Paused' : isSorting ? 'Sorting...' : 'Ready'}
+            </div>
           </div>
           
-          <div className="relative flex items-end gap-1 md:gap-2 h-48 md:h-64 mb-8 overflow-x-auto">
+          <div className="flex items-end justify-center h-64 md:h-80 lg:h-96 gap-1.5 mb-6 border-b border-gray-700 pb-10 relative">
             {array.map((value, index) => {
-              const isSorted = sortedRanges.some(([start, end]) => index >= start && index <= end);
+              const isSorted = sortedRanges.some(([s, e]) => index >= s && index <= e);
               const isComparing = animationState.comparing.includes(index);
-              const inMergeRange = animationState.currentMerge?.left <= index && 
-                                  index <= animationState.currentMerge?.right;
-              const isLeftArray = animationState.currentMerge && 
-                                index <= animationState.currentMerge.mid;
-              const isRightArray = animationState.currentMerge && 
-                                 index > animationState.currentMerge.mid;
+              const inMerge = animationState.currentMerge && 
+                index >= animationState.currentMerge.left && 
+                index <= animationState.currentMerge.right;
+              const isLeft = animationState.currentMerge && animationState.currentMerge.mid >= index && 
+                index >= animationState.currentMerge.left;
+              const isRight = animationState.currentMerge && index > animationState.currentMerge.mid && 
+                index <= animationState.currentMerge.right;
 
               return (
                 <div
                   key={index}
-                  className={`flex-grow min-w-[28px] md:min-w-[35px] text-center py-2 rounded-t transition-all relative
-                    ${isSorted ? 'bg-green-500' : ''}
-                    ${isComparing ? 'bg-red-500 animate-pulse' : ''}
-                    ${inMergeRange ? (isLeftArray ? 'bg-orange-300' : 'bg-pink-300') : ''}
-                    ${!isSorted && !inMergeRange ? 'bg-blue-500' : ''}
-                  `}
-                  style={{ height: `${value}%` }}
+                  className="relative flex-1 min-w-[2%] transition-all duration-300"
+                  style={{ height: `${value * 3}px` }}
                 >
-                  <span className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 text-xs">
-                    {value}
-                  </span>
-                  {animationState.splitStack.map(({ left, right }, i) => (
+                  <div 
+                    className={`absolute inset-0 rounded-t-lg transition-colors ${
+                      isComparing ? 'bg-red-500 animate-pulse' : 
+                      isSorted ? 'bg-green-500' : 
+                      isLeft ? 'bg-purple-500' :
+                      isRight ? 'bg-indigo-500' :
+                      'bg-blue-500'
+                    }`}
+                  >
+                    <span className="absolute -top-6 left-1/2 -translate-x-1/2 text-xs font-bold">
+                      {value}
+                    </span>
+                    <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-xs text-gray-400">
+                      {index}
+                    </span>
+                  </div>
+                  {animationState.splitStack.map(({ left, right }, depth) => (
                     index >= left && index <= right && (
                       <div
-                        key={i}
-                        className="absolute top-0 left-0 right-0 border-2 border-yellow-400"
-                        style={{ height: `${100 + i * 10}%` }}
+                        key={`split-${depth}-${left}-${right}`}
+                        className="absolute inset-0 border-2 rounded-t-lg"
+                        style={{ 
+                          borderColor: borderColors[depth % borderColors.length],
+                          transform: `scale(${1 - depth * 0.03})`,
+                          zIndex: -depth
+                        }}
                       />
                     )
                   ))}
@@ -313,59 +457,85 @@ const MergeSortVisualizer = () => {
             })}
           </div>
 
-          {animationState.currentMerge && (
-            <div className="mt-4 md:mt-8 p-3 md:p-4 bg-gray-700 rounded-lg">
-              <h3 className="text-base md:text-lg mb-2">Current Merge</h3>
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1">
-                  <h4 className="text-orange-300 mb-2">Left Array</h4>
-                  <div className="flex gap-2">
-                    {animationState.left.map((num, i) => (
-                      <div key={i} className="bg-orange-300 p-2 rounded">
-                        {num}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <h4 className="text-pink-300 mb-2">Right Array</h4>
-                  <div className="flex gap-2">
-                    {animationState.right.map((num, i) => (
-                      <div key={i} className="bg-pink-300 p-2 rounded">
-                        {num}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <h4 className="text-green-300 mb-2">Merged Result</h4>
-                  <div className="flex gap-2">
-                    {animationState.merged.map((num, i) => (
-                      <div key={i} className="bg-green-300 p-2 rounded">
-                        {num}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+          <div className="bg-gray-700 p-4 rounded-lg">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-lg font-semibold">Algorithm Steps</h3>
+              <span className="text-xs bg-gray-600 px-2 py-1 rounded">
+                {stepLog.length} steps
+              </span>
             </div>
-          )}
+            <div className="h-48 overflow-y-auto space-y-2 text-sm scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+              {stepLog.length > 0 ? (
+                stepLog.map((log, idx) => (
+                  <div key={idx} className="p-2 bg-gray-600 rounded even:bg-gray-700 transition-all">
+                    {log}
+                  </div>
+                ))
+              ) : (
+                <div className="p-4 text-center text-gray-400">
+                  Click "Start Sorting" to begin visualization
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
-        {/* Code Panel */}
-        <div className="w-full md:w-1/3 bg-gray-800 p-4 md:p-6 rounded-lg overflow-auto">
-          <pre className="font-mono text-xs md:text-sm">
-            {codeLines.map((line, index) => (
+        <div className="lg:w-1/3 bg-gray-800 p-6 rounded-xl shadow-xl">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">Algorithm Code</h2>
+            <div className="text-xs bg-blue-900/30 px-2 py-1 rounded text-blue-300">
+              {highlightedLine >= 0 ? `Line ${highlightedLine + 1}` : 'Code'}
+            </div>
+          </div>
+          <pre className="font-mono text-sm bg-gray-900 p-4 rounded-lg overflow-auto h-96">
+            {codeLines.map((line, idx) => (
               <div
-                key={index}
-                className={`p-1 rounded ${highlightedLine === index ? 'bg-gray-600' : ''}`}
+                key={idx}
+                className={`flex items-center ${highlightedLine === idx ? 'bg-blue-900/40 text-blue-400' : ''}`}
               >
-                {line}
+                <span className="text-gray-500 w-8 pr-2 select-none text-right">{idx + 1}</span>
+                <code className={`pl-2 ${highlightedLine === idx ? 'text-blue-300 font-medium' : 'text-gray-300'}`}>
+                  {line}
+                </code>
               </div>
             ))}
           </pre>
+          
+          <div className="mt-4 p-3 bg-gray-700 rounded-lg text-sm">
+            <h3 className="font-medium mb-2">Legend:</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-sm bg-blue-500"></div>
+                <span>Unsorted</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-sm bg-green-500"></div>
+                <span>Sorted</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-sm bg-purple-500"></div>
+                <span>Left subarray</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-sm bg-indigo-500"></div>
+                <span>Right subarray</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-sm bg-red-500"></div>
+                <span>Comparing</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded-sm border-2 border-yellow-400 bg-transparent"></div>
+                <span>Recursive call</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
+      
+      <footer className="mt-6 text-center text-gray-400 text-sm">
+        <p>Merge Sort Time Complexity: O(n log n) | Space Complexity: O(n)</p>
+      </footer>
     </div>
   );
 };
