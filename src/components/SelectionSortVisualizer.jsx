@@ -14,7 +14,7 @@ const DEFAULT_ARRAY_SIZE = 10;
 
 const SelectionSortVisualizer = () => {
   const [array, setArray] = useState([]);
-  // Hold the initially generated unsorted array for resetting.
+  // Save the generated unsorted order for resetting.
   const originalArrayRef = useRef([]);
 
   const [sorting, setSorting] = useState(false);
@@ -172,7 +172,7 @@ const SelectionSortVisualizer = () => {
   };
 
   return (
-    <div className="flex flex-col items-center min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 p-4 md:p-8">
+    <div className="flex flex-col h-screen w-screen overflow-auto bg-gradient-to-br from-purple-100 to-blue-200 p-4 md:p-8">
       {/* CSS Keyframes for swap animation */}
       <style>{`
         @keyframes swapMove {
@@ -182,55 +182,47 @@ const SelectionSortVisualizer = () => {
           100% { transform: translate(var(--swap-translate), 0); }
         }
       `}</style>
-      <h1 className="text-4xl font-bold text-slate-800 mb-8">Selection Sort Visualizer</h1>
+
+      <header className="mb-8 text-center">
+        <h1 className="text-5xl font-extrabold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+          Selection Sort Visualizer
+        </h1>
+        <p className="mt-2 text-lg text-slate-700">
+          Watch the sorting process come to life!
+        </p>
+      </header>
 
       {/* Stats Dashboard */}
-      <div className="w-full max-w-4xl bg-white rounded-xl shadow-lg p-6 mb-8">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-slate-50 p-4 rounded-lg">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">🔄</span>
-              <div>
-                <h3 className="text-sm text-slate-600">Comparisons</h3>
-                <p className="text-xl font-bold text-slate-800">{stats.comparisons}</p>
-              </div>
-            </div>
+      <section className="w-full max-w-5xl mx-auto bg-white rounded-xl shadow-lg p-6 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="bg-slate-50 p-4 rounded-lg flex flex-col items-center">
+            <span className="text-2xl">🔄</span>
+            <h3 className="text-sm text-slate-600 mt-1">Comparisons</h3>
+            <p className="text-xl font-bold text-slate-800">{stats.comparisons}</p>
           </div>
-          <div className="bg-slate-50 p-4 rounded-lg">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">⚡</span>
-              <div>
-                <h3 className="text-sm text-slate-600">Swaps</h3>
-                <p className="text-xl font-bold text-slate-800">{stats.swaps}</p>
-              </div>
-            </div>
+          <div className="bg-slate-50 p-4 rounded-lg flex flex-col items-center">
+            <span className="text-2xl">⚡</span>
+            <h3 className="text-sm text-slate-600 mt-1">Swaps</h3>
+            <p className="text-xl font-bold text-slate-800">{stats.swaps}</p>
           </div>
-          <div className="bg-slate-50 p-4 rounded-lg">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">⏱️</span>
-              <div>
-                <h3 className="text-sm text-slate-600">Time Elapsed</h3>
-                <p className="text-xl font-bold text-slate-800">
-                  {Math.floor(stats.timeElapsed / 1000)}s
-                </p>
-              </div>
-            </div>
+          <div className="bg-slate-50 p-4 rounded-lg flex flex-col items-center">
+            <span className="text-2xl">⏱️</span>
+            <h3 className="text-sm text-slate-600 mt-1">Time Elapsed</h3>
+            <p className="text-xl font-bold text-slate-800">
+              {Math.floor(stats.timeElapsed / 1000)}s
+            </p>
           </div>
-          <div className="bg-slate-50 p-4 rounded-lg">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">📊</span>
-              <div>
-                <h3 className="text-sm text-slate-600">Array Size</h3>
-                <p className="text-xl font-bold text-slate-800">{DEFAULT_ARRAY_SIZE}</p>
-              </div>
-            </div>
+          <div className="bg-slate-50 p-4 rounded-lg flex flex-col items-center">
+            <span className="text-2xl">📊</span>
+            <h3 className="text-sm text-slate-600 mt-1">Array Size</h3>
+            <p className="text-xl font-bold text-slate-800">{DEFAULT_ARRAY_SIZE}</p>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Array Visualization */}
-      <div className="w-full max-w-4xl bg-white rounded-xl shadow-lg p-6 mb-8">
-        <div className="flex justify-center items-end gap-2 h-[300px]">
+      <section className="w-full max-w-5xl mx-auto bg-white rounded-xl shadow-lg p-6 mb-8">
+        <div className="flex justify-center items-end gap-2 h-64 md:h-80 overflow-x-auto">
           {array.map((value, idx) => {
             let bgColor = 'bg-blue-500';
             if (idx === minIndex) bgColor = 'bg-red-500';
@@ -263,14 +255,14 @@ const SelectionSortVisualizer = () => {
             );
           })}
         </div>
-      </div>
+      </section>
 
       {/* Controls */}
-      <div className="w-full max-w-4xl flex flex-wrap gap-4 justify-center mb-8">
+      <section className="w-full max-w-5xl mx-auto flex flex-wrap gap-4 justify-center mb-8">
         <button
           onClick={generateArray}
           disabled={sorting && !paused}
-          className="px-6 py-3 bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-400 text-white font-medium rounded-lg transition-colors duration-200 disabled:cursor-not-allowed flex items-center gap-2"
+          className="px-6 py-3 bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-400 text-white font-medium rounded-lg transition-colors duration-200 flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-emerald-300"
         >
           <FaRandom />
           Generate New Array
@@ -283,27 +275,27 @@ const SelectionSortVisualizer = () => {
               : paused
               ? 'bg-green-500 hover:bg-green-600'
               : 'bg-violet-500 hover:bg-violet-600'
-          } text-white font-medium rounded-lg transition-colors duration-200 flex items-center gap-2`}
+          } text-white font-medium rounded-lg transition-colors duration-200 flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-violet-300`}
         >
           {sorting && !paused ? <FaPause /> : <FaPlay />}
           {sorting && !paused ? 'Pause Sorting' : paused ? 'Resume Sorting' : 'Start Sorting'}
         </button>
         <button
           onClick={resetState}
-          className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition-colors duration-200 flex items-center gap-2"
+          className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-lg transition-colors duration-200 flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-blue-300"
         >
           <FaUndo />
           Reset Array
         </button>
         {/* Speed Control */}
-        <div className="flex flex-col items-center gap-2 bg-white p-4 rounded-lg shadow-sm">
+        <div className="flex flex-col items-center gap-2 bg-gray-100 p-4 rounded-lg shadow-sm w-full sm:w-auto">
           <div className="flex items-center gap-2">
             <MdSpeed className="text-slate-600 text-xl" />
             <span className="text-slate-700 font-medium">
               Speed: {SPEED_OPTIONS[speed] || 'Custom'}
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full">
             <span className="text-sm text-slate-500">Fast</span>
             <input
               type="range"
@@ -312,33 +304,36 @@ const SelectionSortVisualizer = () => {
               step="100"
               value={speed}
               onChange={(e) => setSpeed(Number(e.target.value))}
-              className="w-32 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
             />
             <span className="text-sm text-slate-500">Slow</span>
           </div>
           <span className="text-xs text-slate-400">{speed}ms delay</span>
         </div>
-      </div>
+      </section>
 
-      {/* Legend */}
-      <div className="flex flex-wrap gap-4 text-sm text-slate-600 justify-center">
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-red-500 rounded"></div>
-          <span>Minimum Element</span>
+      {/* Legend & Footer */}
+      <footer className="text-center text-slate-600 text-sm">
+        <div className="flex flex-wrap gap-4 justify-center mb-2">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-red-500 rounded"></div>
+            <span>Minimum Element</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-yellow-500 rounded"></div>
+            <span>Current Element</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-green-500 rounded"></div>
+            <span>Sorted</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-blue-500 rounded"></div>
+            <span>Unsorted</span>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-yellow-500 rounded"></div>
-          <span>Current Element</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-green-500 rounded"></div>
-          <span>Sorted</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-blue-500 rounded"></div>
-          <span>Unsorted</span>
-        </div>
-      </div>
+        <p>© {new Date().getFullYear()} Sorting Visualizer</p>
+      </footer>
     </div>
   );
 };
