@@ -8,6 +8,7 @@ import QuickSortVisualizer from "./components/QuickSortVisualizer";
 import TreeTraversalVisualizer from "./components/TreeTraversalVisualizer";
 import LinearSearchVisualizer from "./components/LinearSearchVisualizer";
 import BinarySearchVisualizer from "./components/BinarySearchVisualizer";
+import NQueensVisualizer from "./components/NQueensVisualize";
 
 
 
@@ -20,8 +21,9 @@ function App() {
       {/* <SelectionSortVisualizer/> */}
       {/* <MergeSortVisualizer /> */}
       {/* <QuickSortVisualizer /> */}
-      <LinearSearchVisualizer />
+      {/* <LinearSearchVisualizer /> */}
       {/* <BinarySearchVisualizer /> */}
+      <NQueensVisualizer/>
     
       
     </>
