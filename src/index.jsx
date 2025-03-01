@@ -9,6 +9,7 @@ import TreeTraversalVisualizer from "./components/TreeTraversalVisualizer";
 import LinearSearchVisualizer from "./components/LinearSearchVisualizer";
 import BinarySearchVisualizer from "./components/BinarySearchVisualizer";
 import NQueensVisualizer from "./components/NQueensVisualize";
+import SudokuSolverVisualizer from "./components/SudokuSolverVisualizer";
 
 
 
@@ -23,8 +24,8 @@ function App() {
       {/* <QuickSortVisualizer /> */}
       {/* <LinearSearchVisualizer /> */}
       {/* <BinarySearchVisualizer /> */}
-      <NQueensVisualizer/>
-    
+      
+      <SudokuSolverVisualizer/>
       
     </>
   );
