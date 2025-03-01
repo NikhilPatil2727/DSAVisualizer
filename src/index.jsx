@@ -6,6 +6,8 @@ import SelectionSortVisualizer from "./components/SelectionSortVisualizer";
 import MergeSortVisualizer from "./components/MergeSortVisualizer";
 import QuickSortVisualizer from "./components/QuickSortVisualizer";
 import TreeTraversalVisualizer from "./components/TreeTraversalVisualizer";
+import LinearSearchVisualizer from "./components/LinearSearchVisualizer";
+import BinarySearchVisualizer from "./components/BinarySearchVisualizer";
 
 
 
@@ -17,7 +19,9 @@ function App() {
         {/* <TreeTraversalVisualizer /> */}
       {/* <SelectionSortVisualizer/> */}
       {/* <MergeSortVisualizer /> */}
-      <QuickSortVisualizer />
+      {/* <QuickSortVisualizer /> */}
+      {/* <LinearSearchVisualizer /> */}
+      <BinarySearchVisualizer />
     
       
     </>
