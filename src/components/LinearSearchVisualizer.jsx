@@ -76,52 +76,66 @@ const LinearSearchVisualizer = () => {
     }
   }, [steps]);
 
-  const startSearch = async () => {
+  // Recursive search function that can be paused/resumed
+  const searchFrom = async (index) => {
+    if (index >= array.length) {
+      setResult('Element not found');
+      setIsSearching(false);
+      return;
+    }
+    if (cancelFlag.current) return;
+
+    setCurrentIndex(index);
+    setSearchHistory(prev => [...prev, index]);
+    const stepInfo = {
+      index,
+      value: array[index],
+      status: array[index] === parseInt(target) ? 'found' : 'checked'
+    };
+    setSteps(prev => [...prev, stepInfo]);
+
+    await new Promise(resolve => setTimeout(resolve, speed));
+    if (cancelFlag.current) return;
+
+    if (array[index] === parseInt(target)) {
+      setIsFound(true);
+      setResult(`Element found at position ${index + 1}`);
+      setIsSearching(false);
+      return;
+    } else {
+      searchFrom(index + 1);
+    }
+  };
+
+  // Start search from the beginning
+  const startSearch = () => {
     if (!target || target < 10 || target > 99) {
       setResult('Please enter a valid target between 10 and 99.');
       return;
     }
-    
     resetSearch();
     setIsSearching(true);
     cancelFlag.current = false;
-    let found = false;
-    
-    for (let i = 0; i < array.length; i++) {
-      if (cancelFlag.current) break;
-      
-      setCurrentIndex(i);
-      setSearchHistory(prev => [...prev, i]);
-      const stepInfo = {
-        index: i,
-        value: array[i],
-        status: array[i] === parseInt(target) ? 'found' : 'checked'
-      };
-      setSteps(prev => [...prev, stepInfo]);
-
-      await new Promise(resolve => setTimeout(resolve, speed));
-
-      if (array[i] === parseInt(target)) {
-        setIsFound(true);
-        setResult(`Element found at position ${i + 1}`);
-        found = true;
-        break;
-      }
-    }
-
-    if (!found && !cancelFlag.current) {
-      setResult('Element not found');
-    }
-    setIsSearching(false);
-    cancelFlag.current = false;
+    searchFrom(0);
   };
 
-  const stopSearch = () => {
+  // Pause the ongoing search
+  const pauseSearch = () => {
     if (isSearching) {
       cancelFlag.current = true;
       setIsSearching(false);
       setIsPaused(true);
       setResult('Search paused');
+    }
+  };
+
+  // Resume search from the last checked index
+  const resumeSearch = () => {
+    if (isPaused) {
+      cancelFlag.current = false;
+      setIsSearching(true);
+      setIsPaused(false);
+      searchFrom(currentIndex + 1);
     }
   };
 
@@ -187,7 +201,7 @@ const LinearSearchVisualizer = () => {
                       value={target}
                       onChange={(e) => setTarget(e.target.value)}
                       className="w-full p-2 border rounded-md focus:outline-none focus:ring-1 text-sm shadow-sm transition-all"
-                      disabled={isSearching}
+                      disabled={isSearching || isPaused}
                       min="10"
                       max="99"
                       placeholder="Enter a number (10-99)"
@@ -206,6 +220,7 @@ const LinearSearchVisualizer = () => {
                         max="1000"
                         value={speed}
                         onChange={(e) => setSpeed(Number(e.target.value))}
+                        disabled={isSearching || isPaused}
                         className="flex-grow h-1 bg-gray-200 rounded-md appearance-none cursor-pointer"
                       />
                       <span className="ml-1 text-xs text-gray-500">Slow</span>
@@ -214,20 +229,27 @@ const LinearSearchVisualizer = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-4 gap-2 mt-3">
+                <div className="grid grid-cols-5 gap-2 mt-3">
                   <button
                     onClick={startSearch}
-                    disabled={isSearching || target === ''}
+                    disabled={isSearching || isPaused || target === ''}
                     className={`px-2 py-1 text-sm ${themeColors[theme].secondary} text-white font-medium rounded-md disabled:opacity-50 transition-all shadow-sm`}
                   >
                     Start
                   </button>
                   <button
-                    onClick={stopSearch}
+                    onClick={pauseSearch}
                     disabled={!isSearching}
                     className="px-2 py-1 text-sm bg-red-600 hover:bg-red-700 text-white font-medium rounded-md disabled:opacity-50 transition-all shadow-sm"
                   >
-                    Stop
+                    Pause
+                  </button>
+                  <button
+                    onClick={resumeSearch}
+                    disabled={!isPaused}
+                    className="px-2 py-1 text-sm bg-green-600 hover:bg-green-700 text-white font-medium rounded-md disabled:opacity-50 transition-all shadow-sm"
+                  >
+                    Resume
                   </button>
                   <button
                     onClick={resetSearch}
@@ -238,10 +260,10 @@ const LinearSearchVisualizer = () => {
                   </button>
                   <button
                     onClick={generateNewArray}
-                    disabled={isSearching}
+                    disabled={isSearching || isPaused}
                     className={`px-2 py-1 text-sm ${themeColors[theme].accent} text-white font-medium rounded-md disabled:opacity-50 transition-all shadow-sm`}
                   >
-                    New Array
+                    Generate New Array
                   </button>
                 </div>
               </section>
