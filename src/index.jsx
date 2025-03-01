@@ -20,8 +20,8 @@ function App() {
       {/* <SelectionSortVisualizer/> */}
       {/* <MergeSortVisualizer /> */}
       {/* <QuickSortVisualizer /> */}
-      {/* <LinearSearchVisualizer /> */}
-      <BinarySearchVisualizer />
+      <LinearSearchVisualizer />
+      {/* <BinarySearchVisualizer /> */}
     
       
     </>
