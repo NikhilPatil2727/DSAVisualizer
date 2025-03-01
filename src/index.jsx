@@ -16,8 +16,8 @@ function App() {
       {/* <InsertionSortVisualizer/> */}
         {/* <TreeTraversalVisualizer /> */}
       {/* <SelectionSortVisualizer/> */}
-      <MergeSortVisualizer />
-      {/* <QuickSortVisualizer /> */}
+      {/* <MergeSortVisualizer /> */}
+      <QuickSortVisualizer />
     
       
     </>
