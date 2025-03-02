@@ -10,6 +10,7 @@ import LinearSearchVisualizer from "./components/LinearSearchVisualizer";
 import BinarySearchVisualizer from "./components/BinarySearchVisualizer";
 import NQueensVisualizer from "./components/NQueensVisualize";
 import SudokuSolverVisualizer from "./components/SudokuSolverVisualizer";
+import BSTVisualizer from "./components/BSTVisualizer";
 
 
 
@@ -24,8 +25,10 @@ function App() {
       {/* <QuickSortVisualizer /> */}
       {/* <LinearSearchVisualizer /> */}
       {/* <BinarySearchVisualizer /> */}
-      
-      <SudokuSolverVisualizer/>
+{/*       
+      <SudokuSolverVisualizer/> */}
+
+      <BSTVisualizer/>
       
     </>
   );
