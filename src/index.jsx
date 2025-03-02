@@ -11,6 +11,7 @@ import BinarySearchVisualizer from "./components/BinarySearchVisualizer";
 import NQueensVisualizer from "./components/NQueensVisualize";
 import SudokuSolverVisualizer from "./components/SudokuSolverVisualizer";
 import BSTVisualizer from "./components/BSTVisualizer";
+import AlgorithmRace from "./components/AlgorithmRace";
 
 
 
@@ -28,7 +29,11 @@ function App() {
 {/*       
       <SudokuSolverVisualizer/> */}
 
-      <BSTVisualizer/>
+      {/* <BSTVisualizer/> */}
+
+      <AlgorithmRace/>
+         
+      
       
     </>
   );
