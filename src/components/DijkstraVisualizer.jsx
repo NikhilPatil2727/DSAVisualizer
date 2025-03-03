@@ -446,26 +446,38 @@ const DijkstraVisualizer = () => {
       `}</style>
 
       {/* Guide Modal */}
-      {showGuide && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg max-w-md mx-auto">
-            <h2 className="text-2xl font-bold mb-4 text-gray-800">Welcome to Dijkstra Visualizer</h2>
-            <ul className="list-disc pl-5 mb-4 text-gray-700">
-              <li>Select a start node from the dropdown.</li>
-              <li>Press <span className="font-semibold">Find Path</span> to run the entire algorithm at once.</li>
-              <li>Use <span className="font-semibold">Next Step</span> or <span className="font-semibold">Auto Play</span> to step through it.</li>
-              <li>Adjust <span className="font-semibold">Node Count</span> and <span className="font-semibold">Animation Speed</span> as desired.</li>
-              <li>Click <span className="font-semibold">Randomize Graph</span> for a new random weighted graph.</li>
-            </ul>
-            <button
-              onClick={() => setShowGuide(false)}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-            >
-              Got it!
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Guide Modal */}
+{showGuide && (
+  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+    <div className="bg-white p-6 rounded-lg shadow-lg max-w-md mx-auto">
+      <h2 className="text-2xl font-bold mb-4 text-gray-800">Welcome to Dijkstra Visualizer</h2>
+      <ul className="list-disc pl-5 mb-4 text-gray-700">
+        <li>Select a start node from the dropdown.</li>
+        <li>
+          Press <span className="font-semibold">Find Path</span> to automatically animate the algorithm's execution through all steps.
+        </li>
+        <li>
+          Use <span className="font-semibold">Next Step</span> to manually advance one step at a time.
+        </li>
+        <li>
+          Alternatively, select <span className="font-semibold">Auto Play</span> to continuously run the algorithm with your chosen speed.
+        </li>
+        <li>
+          Adjust <span className="font-semibold">Node Count</span> and <span className="font-semibold">Animation Speed</span> as desired.
+        </li>
+        <li>
+          Click <span className="font-semibold">Randomize Graph</span> for a new random weighted graph.
+        </li>
+      </ul>
+      <button
+        onClick={() => setShowGuide(false)}
+        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+      >
+        Got it!
+      </button>
+    </div>
+  </div>
+)}
 
       {/* Title */}
       <header className="text-center mb-8">
