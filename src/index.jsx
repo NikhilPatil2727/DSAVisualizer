@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import BFSVisualizer from "./components/BFSVisualizer";
+import DFSVisualizer from "./components/DFSVisualizer";
 
 
 
@@ -13,6 +14,7 @@ function App() {
 
      
     <BFSVisualizer/>
+    {/* <DFSVisualizer/> */}
 
 
     </>
