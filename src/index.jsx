@@ -5,6 +5,7 @@ import HuffmanCodingVisualizer from "./components/HuffmanCodingVisualizer";
 import GCDVisualizer from "./components/GCDVisualizer";
 import PrimsAlgorithmVisualizer from "./components/PrimsAlgorithmVisualizer";
 import KruskalsAlgorithmVisualizer from "./components/KruskalsAlgorithmVisualizer";
+import SearchAlgorithmRace from "./components/SearchAlgorithmRace";
 
 
 
@@ -20,7 +21,8 @@ function App() {
    {/* <HuffmanCodingVisualizer/> */}
    {/* <GCDVisualizer/> */}
    {/* <PrimsAlgorithmVisualizer/> */}
-   <KruskalsAlgorithmVisualizer/>
+   {/* <KruskalsAlgorithmVisualizer/> */}
+   <SearchAlgorithmRace/>
 
 
     </>
