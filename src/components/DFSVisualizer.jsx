@@ -1,37 +1,58 @@
 import React, { useState, useEffect, useCallback } from 'react';
 
-// Utility function to generate a random graph with proper connectivity.
+// Modified utility function to generate cleaner, more understandable graphs
 const generateRandomGraph = (numNodes = 5) => {
   const nodes = [];
+  // Create nodes in a more structured layout (circular arrangement)
+  const radius = 150;
+  const centerX = 300;
+  const centerY = 200;
+
   for (let i = 0; i < numNodes; i++) {
+    // Calculate position in a circle for better node distribution
+    const angle = (i / numNodes) * 2 * Math.PI;
+    const x = centerX + radius * Math.cos(angle);
+    const y = centerY + radius * Math.sin(angle);
+    
     nodes.push({
       id: i,
       label: String.fromCharCode(65 + i), // A, B, C, etc.
-      x: Math.floor(Math.random() * 500) + 50, // x between 50 and 550
-      y: Math.floor(Math.random() * 300) + 50, // y between 50 and 350
+      x: x,
+      y: y,
     });
   }
 
   const edges = [];
-  // Ensure connectivity with a spanning tree.
-  for (let i = 1; i < numNodes; i++) {
-    edges.push({ source: i - 1, target: i });
-  }
-  // Add additional random edges (avoid duplicates).
+  
+  // First ensure basic connectivity with a circle structure
+  // Connect each node to the next node in sequence
   for (let i = 0; i < numNodes; i++) {
-    for (let j = i + 1; j < numNodes; j++) {
-      if (
-        edges.some(edge =>
-          (edge.source === i && edge.target === j) ||
-          (edge.source === j && edge.target === i)
-        )
-      )
-        continue;
-      if (Math.random() < 0.4) {
-        edges.push({ source: i, target: j });
+    edges.push({ 
+      source: i, 
+      target: (i + 1) % numNodes 
+    });
+  }
+
+  // Add just a few strategic cross-edges for variety but not complexity
+  // For graphs with more than 5 nodes, add a small number of cross connections
+  if (numNodes > 4) {
+    // Add 1-3 cross edges depending on graph size
+    const crossEdgesToAdd = Math.min(3, Math.floor(numNodes / 3));
+    
+    for (let i = 0; i < crossEdgesToAdd; i++) {
+      // Choose nodes that aren't adjacent in the circle
+      let source = Math.floor(Math.random() * numNodes);
+      let target = (source + 2 + Math.floor(Math.random() * (numNodes - 4))) % numNodes;
+      
+      // Check if this edge already exists
+      if (!edges.some(edge => 
+          (edge.source === source && edge.target === target) || 
+          (edge.source === target && edge.target === source))) {
+        edges.push({ source, target });
       }
     }
   }
+  
   return { nodes, edges };
 };
 

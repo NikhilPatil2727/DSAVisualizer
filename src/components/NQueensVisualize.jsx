@@ -4,7 +4,7 @@ import {
   RotateCcw, Info, BookOpen, Code, Settings 
 } from 'lucide-react';
 
-const NQueensVisualizer = () => {
+const NQueensVisualize = () => {
   const [boardSize, setBoardSize] = useState(4);
   const [queens, setQueens] = useState([]);
   const [isSolving, setIsSolving] = useState(false);
@@ -672,4 +672,4 @@ const NQueensVisualizer = () => {
   );
 };
 
-export default NQueensVisualizer;
+export default NQueensVisualize;

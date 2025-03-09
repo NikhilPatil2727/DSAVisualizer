@@ -107,9 +107,16 @@ const SelectionSortVisualizer = () => {
     const n = arr.length;
     let i = currentOuterIndex;
     for (; i < n - 1; i++) {
-      let minIdx = (i === currentOuterIndex && minIndex !== -1) ? minIndex : i;
+      // Reset minIdx to the current index unless we're resuming a paused iteration.
+      let minIdx =
+        i === currentOuterIndex && currentInnerIndex !== null && minIndex !== -1
+          ? minIndex
+          : i;
       setMinIndex(minIdx);
-      let j = (i === currentOuterIndex && currentInnerIndex !== null) ? currentInnerIndex : i + 1;
+      let j =
+        i === currentOuterIndex && currentInnerIndex !== null
+          ? currentInnerIndex
+          : i + 1;
       for (; j < n; j++) {
         if (pausedRef.current) {
           setCurrentOuterIndex(i);
@@ -141,10 +148,14 @@ const SelectionSortVisualizer = () => {
         await sleep(speed / 2);
         setAnimationStates({});
       }
+      // Mark the element at index i as sorted and clear active markers.
       setSortedIndices((prev) => [...prev, i]);
+      setMinIndex(-1);
+      setCurrentIndex(-1);
       setCurrentOuterIndex(i + 1);
     }
-    setSortedIndices((prev) => [...prev, n - 1]);
+    // Mark the last element as sorted.
+    setSortedIndices(Array.from({ length: n }, (_, i) => i));
     setMinIndex(-1);
     setCurrentIndex(-1);
     setSorting(false);
@@ -224,10 +235,11 @@ const SelectionSortVisualizer = () => {
       <section className="w-full max-w-5xl mx-auto bg-white rounded-xl shadow-lg p-6 mb-8">
         <div className="flex justify-center items-end gap-2 h-64 md:h-80 overflow-x-auto">
           {array.map((value, idx) => {
+            // Reorder conditions so sorted elements have highest priority.
             let bgColor = 'bg-blue-500';
-            if (idx === minIndex) bgColor = 'bg-red-500';
+            if (sortedIndices.includes(idx)) bgColor = 'bg-green-500';
+            else if (idx === minIndex) bgColor = 'bg-red-500';
             else if (idx === currentIndex) bgColor = 'bg-yellow-500';
-            else if (sortedIndices.includes(idx)) bgColor = 'bg-green-500';
 
             const swappingState = animationStates[idx];
             const barStyle = swappingState && swappingState.swapping
@@ -332,7 +344,7 @@ const SelectionSortVisualizer = () => {
             <span>Unsorted</span>
           </div>
         </div>
-        <p>© {new Date().getFullYear()} Sorting Visualizer</p>
+        <p> SelectionSort Visualizer</p>
       </footer>
     </div>
   );

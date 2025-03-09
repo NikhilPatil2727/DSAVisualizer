@@ -48,6 +48,7 @@ const QuickSortVisualizer = () => {
     generateArray();
   };
 
+  // Modified quickSort: It now uses the same array reference (no spread operator)
   const quickSort = async (arr, left, right) => {
     if (!sortingRef.current || left >= right) return;
 
@@ -57,11 +58,10 @@ const QuickSortVisualizer = () => {
     setSortedIndices(prev => [...prev, pivotIdx]);
     setCurrentStep(`Pivot ${arr[pivotIdx]} is now in its correct position at index ${pivotIdx}`);
     await sleep(speed);
-    
-    await Promise.all([
-      quickSort([...arr], left, pivotIdx - 1),
-      quickSort([...arr], pivotIdx + 1, right)
-    ]);
+
+    // Recursively sort the left and right subarrays sequentially
+    await quickSort(arr, left, pivotIdx - 1);
+    await quickSort(arr, pivotIdx + 1, right);
   };
 
   const partition = async (arr, left, right) => {
@@ -92,15 +92,11 @@ const QuickSortVisualizer = () => {
         i++;
         setCurrentStep(`${arr[j]} is less than pivot ${pivot}. Swapping elements at index ${i} and ${j}`);
         [arr[i], arr[j]] = [arr[j], arr[i]];
-        
-        if (!sortingRef.current) return -1;
         setArray([...arr]);
         await sleep(speed);
       }
     }
 
-    if (!sortingRef.current) return -1;
-    
     setCurrentStep(`Placing pivot ${pivot} at its correct position`);
     [arr[i + 1], arr[right]] = [arr[right], arr[i + 1]];
     setArray([...arr]);
@@ -120,7 +116,8 @@ const QuickSortVisualizer = () => {
     
     try {
       setCurrentStep('Starting QuickSort algorithm...');
-      await quickSort([...array], 0, array.length - 1);
+      // Use the current array (in state) for in-place sorting.
+      await quickSort(array, 0, array.length - 1);
       
       if (sortingRef.current) {
         setCurrentStep('Sorting completed!');

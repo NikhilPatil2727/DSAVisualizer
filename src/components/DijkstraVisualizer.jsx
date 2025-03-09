@@ -1,54 +1,73 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 
-
 /* ---------------------------------------------
  * 1) Utility: Generate a random weighted graph
  * ---------------------------------------------
- * - Ensures no duplicate edges.
- * - Ensures each edge has a random weight between 1 and 15.
- * - Positions each node randomly (within the SVG view).
+ * - Creates a simple, understandable graph structure
+ * - Places nodes in a circular layout for clarity
+ * - Adds minimal cross-edges for interesting paths
+ * - Uses simple weight ranges
  */
 const generateRandomGraph = (numNodes = 6) => {
   const nodes = [];
+  
+  // Create nodes in a more organized circular layout instead of random positions
+  const centerX = 300;
+  const centerY = 200;
+  const radius = 150;
+  
   for (let i = 0; i < numNodes; i++) {
+    // Position nodes in a circle for better visualization
+    const angle = (i / numNodes) * 2 * Math.PI;
+    const x = centerX + radius * Math.cos(angle);
+    const y = centerY + radius * Math.sin(angle);
+    
     nodes.push({
       id: i,
       label: String.fromCharCode(65 + i), // A, B, C, ...
-      x: Math.floor(Math.random() * 500) + 50,  // range: [50..550]
-      y: Math.floor(Math.random() * 300) + 50,  // range: [50..350]
+      x: x,
+      y: y,
     });
   }
 
   const edges = [];
-  // Create a simple chain to ensure connectivity
-  for (let i = 1; i < numNodes; i++) {
+  
+  // Create a simple circular path to ensure connectivity
+  for (let i = 0; i < numNodes; i++) {
     edges.push({
-      source: i - 1,
-      target: i,
-      weight: Math.floor(Math.random() * 15) + 1, // range: [1..15]
+      source: i,
+      target: (i + 1) % numNodes, // Connect to next node, with last connecting to first
+      weight: Math.floor(Math.random() * 10) + 1, // Range: [1..10] for simpler weights
     });
   }
-  // Add random edges
-  for (let i = 0; i < numNodes; i++) {
-    for (let j = i + 1; j < numNodes; j++) {
-      // Skip if it already exists
-      if (
-        edges.some(e =>
-          (e.source === i && e.target === j) ||
-          (e.source === j && e.target === i)
-        )
-      ) {
-        continue;
-      }
-      // With probability ~0.35, add an edge
-      if (Math.random() < 0.35) {
-        edges.push({
-          source: i,
-          target: j,
-          weight: Math.floor(Math.random() * 15) + 1,
-        });
-      }
+  
+  // Add just a few cross-edges (chords) for alternate paths, but not too many
+  const maxExtraEdges = Math.min(numNodes - 3, 3); // Limit extra edges based on node count
+  let extraEdgesAdded = 0;
+  
+  // Try to add a few longer-distance connections
+  for (let i = 0; i < numNodes && extraEdgesAdded < maxExtraEdges; i++) {
+    // Connect to a node that's further away in the sequence (not adjacent)
+    const target = (i + 2 + Math.floor(Math.random() * (numNodes - 4))) % numNodes;
+    
+    // Skip if it would create a duplicate edge
+    if (
+      edges.some(e =>
+        (e.source === i && e.target === target) ||
+        (e.source === target && e.target === i)
+      ) || 
+      Math.abs(i - target) <= 1 || // Skip if they're adjacent (already connected)
+      Math.abs(i - target) === numNodes - 1 // Skip if they're the first and last (already connected)
+    ) {
+      continue;
     }
+    
+    edges.push({
+      source: i,
+      target: target,
+      weight: Math.floor(Math.random() * 10) + 1,
+    });
+    extraEdgesAdded++;
   }
 
   return { nodes, edges };
@@ -446,38 +465,37 @@ const DijkstraVisualizer = () => {
       `}</style>
 
       {/* Guide Modal */}
-      {/* Guide Modal */}
-{showGuide && (
-  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-    <div className="bg-white p-6 rounded-lg shadow-lg max-w-md mx-auto">
-      <h2 className="text-2xl font-bold mb-4 text-gray-800">Welcome to Dijkstra Visualizer</h2>
-      <ul className="list-disc pl-5 mb-4 text-gray-700">
-        <li>Select a start node from the dropdown.</li>
-        <li>
-          Press <span className="font-semibold">Find Path</span> to automatically animate the algorithm's execution through all steps.
-        </li>
-        <li>
-          Use <span className="font-semibold">Next Step</span> to manually advance one step at a time.
-        </li>
-        <li>
-          Alternatively, select <span className="font-semibold">Auto Play</span> to continuously run the algorithm with your chosen speed.
-        </li>
-        <li>
-          Adjust <span className="font-semibold">Node Count</span> and <span className="font-semibold">Animation Speed</span> as desired.
-        </li>
-        <li>
-          Click <span className="font-semibold">Randomize Graph</span> for a new random weighted graph.
-        </li>
-      </ul>
-      <button
-        onClick={() => setShowGuide(false)}
-        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-      >
-        Got it!
-      </button>
-    </div>
-  </div>
-)}
+      {showGuide && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg max-w-md mx-auto">
+            <h2 className="text-2xl font-bold mb-4 text-gray-800">Welcome to Dijkstra Visualizer</h2>
+            <ul className="list-disc pl-5 mb-4 text-gray-700">
+              <li>Select a start node from the dropdown.</li>
+              <li>
+                Press <span className="font-semibold">Find Path</span> to automatically animate the algorithm's execution through all steps.
+              </li>
+              <li>
+                Use <span className="font-semibold">Next Step</span> to manually advance one step at a time.
+              </li>
+              <li>
+                Alternatively, select <span className="font-semibold">Auto Play</span> to continuously run the algorithm with your chosen speed.
+              </li>
+              <li>
+                Adjust <span className="font-semibold">Node Count</span> and <span className="font-semibold">Animation Speed</span> as desired.
+              </li>
+              <li>
+                Click <span className="font-semibold">Randomize Graph</span> for a new random weighted graph.
+              </li>
+            </ul>
+            <button
+              onClick={() => setShowGuide(false)}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+            >
+              Got it!
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Title */}
       <header className="text-center mb-8">

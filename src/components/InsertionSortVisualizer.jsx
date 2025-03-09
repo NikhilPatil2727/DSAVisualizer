@@ -294,8 +294,8 @@ const InsertionSortVisualizer = () => {
       {/* Footer */}
       <footer className="mt-8 text-center text-slate-600">
         <p className="text-sm">
-          Visualizer designed with ❤️ using React & Tailwind CSS | 
-          Educational tool for understanding sorting algorithms
+         InsertionSortVisualizer  
+          
         </p>
       </footer>
     </div>

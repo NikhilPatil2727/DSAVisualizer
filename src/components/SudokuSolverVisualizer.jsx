@@ -220,7 +220,9 @@ const HistorySteps = ({ history }) => {
                 className="bg-gray-50 rounded p-2 text-sm border-l-4 border-blue-500"
               >
                 <div className="font-semibold text-gray-700">Step {index + 1}</div>
-                <div>Placed <span className="text-blue-600 font-bold">{step.num}</span> at position (<span className="text-gray-800">{step.row + 1}</span>, <span className="text-gray-800">{step.col + 1}</span>)</div>
+                <div>
+                  Placed <span className="text-blue-600 font-bold">{step.num}</span> at position (<span className="text-gray-800">{step.row + 1}</span>, <span className="text-gray-800">{step.col + 1}</span>)
+                </div>
               </motion.div>
             ))}
           </div>
@@ -262,12 +264,12 @@ const Instructions = () => {
             className="bg-white mt-2 p-4 rounded-lg shadow overflow-hidden"
           >
             <ol className="list-decimal list-inside space-y-2 text-gray-700">
-              <li>Click "Random Puzzle" to load a predefined puzzle or enter your own numbers</li>
-              <li>Numbers that conflict with Sudoku rules will be highlighted in red</li>
-              <li>Click "Solve" to watch the backtracking algorithm solve the puzzle</li>
-              <li>Use the speed slider to control how fast the algorithm runs</li>
-              <li>Use the "Stop" button to pause the solving process</li>
-              <li>The "Solution Steps" section shows each step the algorithm takes</li>
+              <li>Click "Random Puzzle" to generate a new, solvable puzzle.</li>
+              <li>Numbers that conflict with Sudoku rules will be highlighted in red.</li>
+              <li>Click "Solve" to watch the backtracking algorithm solve the puzzle step by step.</li>
+              <li>Use the speed slider to control how fast the algorithm runs.</li>
+              <li>Use the "Stop" button to pause the solving process.</li>
+              <li>The "Solution Steps" section shows each step the algorithm takes.</li>
             </ol>
           </motion.div>
         )}
@@ -277,8 +279,8 @@ const Instructions = () => {
 };
 
 // -------------------- Main SudokuSolver Component --------------------
-const SudokuSolver = () => {
-  // State Initialization
+const SudokuSolverVisualizer = () => {
+  // State Initialization using Immer for grid updates.
   const [grid, setGrid] = useImmer(Array(9).fill().map(() => Array(9).fill(0)));
   const [solving, setSolving] = useState(false);
   const [paused, setPaused] = useState(false);
@@ -298,12 +300,10 @@ const SudokuSolver = () => {
 
   // -------------------- Validation Helpers --------------------
   const isValid = (board, row, col, num) => {
-    // Check row and column (ignoring the current cell)
     for (let i = 0; i < 9; i++) {
       if (i !== col && board[row][i] === num) return false;
       if (i !== row && board[i][col] === num) return false;
     }
-    // Check the 3x3 subgrid
     const startRow = Math.floor(row / 3) * 3;
     const startCol = Math.floor(col / 3) * 3;
     for (let i = 0; i < 3; i++) {
@@ -325,24 +325,16 @@ const SudokuSolver = () => {
     return null;
   };
 
-  // Check if the entire grid is valid
   const validateEntireGrid = (board) => {
     const newConflicts = {};
     let hasConflicts = false;
-    
     for (let i = 0; i < 9; i++) {
       for (let j = 0; j < 9; j++) {
         if (board[i][j] !== 0) {
-          // Save current value
           const currentValue = board[i][j];
-          
-          // Temporarily set to 0 to check if this number is valid in this position
           board[i][j] = 0;
           const valid = isValid(board, i, j, currentValue);
-          
-          // Restore the value
           board[i][j] = currentValue;
-          
           if (!valid) {
             newConflicts[`${i}-${j}`] = true;
             hasConflicts = true;
@@ -350,142 +342,128 @@ const SudokuSolver = () => {
         }
       }
     }
-    
     setConflicts(newConflicts);
     return !hasConflicts;
   };
 
+  // -------------------- Shuffle Helper --------------------
+  const shuffleArray = (arr) => {
+    const array = [...arr];
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+  };
+
+  // -------------------- Puzzle Generation Helpers --------------------
+  // Generates a complete (solved) sudoku board using backtracking.
+  const generateCompleteSudoku = () => {
+    let board = Array(9).fill().map(() => Array(9).fill(0));
+    const fillBoard = () => {
+      const empty = findEmpty(board);
+      if (!empty) return true;
+      const [row, col] = empty;
+      const numbers = shuffleArray([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+      for (let num of numbers) {
+        if (isValid(board, row, col, num)) {
+          board[row][col] = num;
+          if (fillBoard()) return true;
+          board[row][col] = 0;
+        }
+      }
+      return false;
+    };
+    fillBoard();
+    return board;
+  };
+
+  // Removes a given number of cells (set to 0) from a complete board.
+  const removeCells = (board, count) => {
+    let newBoard = board.map(row => row.slice());
+    while (count > 0) {
+      const row = Math.floor(Math.random() * 9);
+      const col = Math.floor(Math.random() * 9);
+      if (newBoard[row][col] !== 0) {
+        newBoard[row][col] = 0;
+        count--;
+      }
+    }
+    return newBoard;
+  };
+
   // -------------------- Solve Function (with Pause/Resume & Cancel) --------------------
   const solve = useCallback(async () => {
-    // Check if there are conflicts before trying to solve
     const boardCopy = grid.map(row => [...row]);
     if (!validateEntireGrid(boardCopy)) {
       alert("The current puzzle has conflicts. Please fix them before solving.");
       return false;
     }
-    
     setSolving(true);
     setPaused(false);
-    cancelSolvingRef.current = false; // Reset cancellation flag
-    setHistory([]); // Reset history
+    cancelSolvingRef.current = false;
+    setHistory([]);
     setSolveStep(0);
-
     const solveInternal = async (board, step = 0) => {
-      // Check for cancellation
       if (cancelSolvingRef.current) return false;
-
-      // Pause loop – wait if paused
       while (pausedRef.current) {
         if (cancelSolvingRef.current) return false;
         await new Promise(resolve => setTimeout(resolve, 100));
       }
-
       const empty = findEmpty(board);
       if (!empty) {
         setGrid(board.map(row => [...row]));
         return true;
       }
-      
       const [row, col] = empty;
       setSolveStep(step);
-      
-      // Try numbers 1-9
-      for (let num = 1; num <= 9; num++) {
+      const candidates = shuffleArray([1,2,3,4,5,6,7,8,9]);
+      for (const num of candidates) {
         if (cancelSolvingRef.current) return false;
-        
-        // Handle pause
         while (pausedRef.current) {
           if (cancelSolvingRef.current) return false;
           await new Promise(resolve => setTimeout(resolve, 100));
         }
-        
-        // Check if number is valid
         if (isValid(board, row, col, num)) {
-          // Place the number
           board[row][col] = num;
           setCurrentCell([row, col]);
-          
-          // Update history and grid
           const newHistoryItem = { row, col, num, step: step + 1 };
           setHistory(prev => [...prev, newHistoryItem]);
           setGrid(board.map(r => [...r]));
-          
-          // Delay for visualization
           await new Promise(resolve => setTimeout(resolve, speed));
-          
-          // Recursively solve the rest
           if (await solveInternal(board, step + 1)) return true;
-          
-          // If we get here, we need to backtrack
           board[row][col] = 0;
           setCurrentCell([row, col]);
           setGrid(board.map(r => [...r]));
           await new Promise(resolve => setTimeout(resolve, speed));
         }
       }
-      
       return false;
     };
-
     const solved = await solveInternal(boardCopy);
     setSolving(false);
     setPaused(false);
     setCurrentCell([-1, -1]);
-    
     if (!solved && !cancelSolvingRef.current) {
       alert("No solution exists for the given puzzle.");
     }
-    
     return solved;
   }, [grid, setGrid, speed]);
 
   // -------------------- Event Handlers --------------------
+  // Updated Random Puzzle: generate a complete sudoku and remove cells to create a solvable puzzle.
   const handleRandomPuzzle = () => {
-    const puzzles = [
-      [
-        [5, 3, 0, 0, 7, 0, 0, 0, 0],
-        [6, 0, 0, 1, 9, 5, 0, 0, 0],
-        [0, 9, 8, 0, 0, 0, 0, 6, 0],
-        [8, 0, 0, 0, 6, 0, 0, 0, 3],
-        [4, 0, 0, 8, 0, 3, 0, 0, 1],
-        [7, 0, 0, 0, 2, 0, 0, 0, 6],
-        [0, 6, 0, 0, 0, 0, 2, 8, 0],
-        [0, 0, 0, 4, 1, 9, 0, 0, 5],
-        [0, 0, 0, 0, 8, 0, 0, 7, 9],
-      ],
-      [
-        [0, 0, 0, 2, 6, 0, 7, 0, 1],
-        [6, 8, 0, 0, 7, 0, 0, 9, 0],
-        [1, 9, 0, 0, 0, 4, 5, 0, 0],
-        [8, 2, 0, 1, 0, 0, 0, 4, 0],
-        [0, 0, 4, 6, 0, 2, 9, 0, 0],
-        [0, 5, 0, 0, 0, 3, 0, 2, 8],
-        [0, 0, 9, 3, 0, 0, 0, 7, 4],
-        [0, 4, 0, 0, 5, 0, 0, 3, 6],
-        [7, 0, 3, 0, 1, 8, 0, 0, 0],
-      ],
-      [
-        [1, 0, 0, 4, 8, 9, 0, 0, 6],
-        [7, 3, 0, 0, 0, 0, 0, 4, 0],
-        [0, 0, 0, 0, 0, 1, 2, 9, 5],
-        [0, 0, 7, 1, 2, 0, 6, 0, 0],
-        [5, 0, 0, 7, 0, 3, 0, 0, 8],
-        [0, 0, 6, 0, 9, 5, 7, 0, 0],
-        [9, 1, 4, 6, 0, 0, 0, 0, 0],
-        [0, 2, 0, 0, 0, 0, 0, 3, 7],
-        [8, 0, 0, 5, 1, 2, 0, 0, 4],
-      ],
-    ];
-    const randomPuzzle = puzzles[Math.floor(Math.random() * puzzles.length)];
-    setGrid(randomPuzzle.map(row => [...row]));
+    const complete = generateCompleteSudoku();
+    // Remove 40 cells for a moderate difficulty puzzle (adjust count as desired)
+    const puzzle = removeCells(complete, 40);
+    setGrid(puzzle.map(row => [...row]));
     setHistory([]);
     setConflicts({});
     setCurrentCell([-1, -1]);
   };
 
-  // When Clear is clicked, cancel any ongoing solve and clear the grid
   const handleClear = () => {
-    cancelSolvingRef.current = true; // Signal cancellation to the solver
+    cancelSolvingRef.current = true;
     setSolving(false);
     setPaused(false);
     const clearedGrid = Array(9).fill().map(() => Array(9).fill(0));
@@ -499,12 +477,9 @@ const SudokuSolver = () => {
     let num = parseInt(value);
     if (isNaN(num)) num = 0;
     if (num < 0 || num > 9) return;
-
     setGrid(draft => {
       draft[row][col] = num;
     });
-    
-    // Schedule validation update after state update
     setTimeout(() => {
       const updatedGrid = grid.map(r => [...r]);
       validateEntireGrid(updatedGrid);
@@ -530,7 +505,7 @@ const SudokuSolver = () => {
           Sudoku Solver
         </h1>
         <p className="text-gray-600">
-          Enter a puzzle or load a sample to watch the backtracking algorithm solve it step by step
+          Enter a puzzle or load a sample to watch the backtracking algorithm solve it step by step.
         </p>
       </motion.div>
       
@@ -564,10 +539,10 @@ const SudokuSolver = () => {
         transition={{ duration: 0.5, delay: 0.5 }}
         className="mt-6 text-center text-gray-500 text-sm"
       >
-        Note: This solver uses a backtracking algorithm with visualization
+        Note: This solver uses a backtracking algorithm with visualization.
       </motion.div>
     </div>
   );
 };
 
-export default SudokuSolver; 
+export default SudokuSolverVisualizer;

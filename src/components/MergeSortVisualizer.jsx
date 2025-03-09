@@ -126,7 +126,8 @@ const MergeSortVisualizer = () => {
 
     let i = 0, j = 0;
     const temp = [];
-    while (i <= mid - left && j <= right - mid - 1) {
+    // Loop through both subarrays until one is exhausted.
+    while (i < (mid - left + 1) && j < (right - mid)) {
       const leftVal = arr[left + i];
       const rightVal = arr[mid + 1 + j];
       
@@ -157,7 +158,7 @@ const MergeSortVisualizer = () => {
     }
 
     setHighlightedLine(16);
-    while (i <= mid - left) {
+    while (i < (mid - left + 1)) {
       temp.push(arr[left + i]);
       i++;
       setAnimationState(prev => ({ ...prev, merged: [...temp] }));
@@ -165,7 +166,7 @@ const MergeSortVisualizer = () => {
     }
 
     setHighlightedLine(17);
-    while (j <= right - mid - 1) {
+    while (j < (right - mid)) {
       temp.push(arr[mid + 1 + j]);
       j++;
       setAnimationState(prev => ({ ...prev, merged: [...temp] }));
@@ -173,10 +174,10 @@ const MergeSortVisualizer = () => {
     }
 
     setHighlightedLine(18);
-    const newArr = [...arr];
+    // **Update the original array in place**
     for (let k = 0; k < temp.length; k++) {
-      newArr[left + k] = temp[k];
-      setArray([...newArr]);
+      arr[left + k] = temp[k];
+      setArray([...arr]); // Update the state for visualization
       await wait(speed / 4);
     }
 
@@ -226,7 +227,8 @@ const MergeSortVisualizer = () => {
     shouldStop.current = false;
     setIsSorting(true);
     setStepLog([]);
-    await mergeSort([...array]);
+    // **Pass the state array directly so that changes are made in place**
+    await mergeSort(array);
     if (!shouldStop.current) {
       setStepLog(prev => [...prev, 'Merge Sort complete!']);
     }

@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router";
-import { Code, Link2Icon, Link2 } from "lucide-react";
+import { Code } from "lucide-react";
 import { motion } from "framer-motion";
 
 const fadeInUp = {
@@ -102,30 +102,29 @@ const Home = () => {
                                     className="text-gray-700 hover:text-green-500 transition-colors flex items-center"
                                 >
                                     <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                                    Searching Algo A
+                                    LinearSearch Visualizer
                                 </Link>
                             </li>
                             <li>
                                 <Link
-                                    to="/searching/algoB"
+                                    to="/searching/algo2"
                                     className="text-gray-700 hover:text-green-500 transition-colors flex items-center"
                                 >
                                     <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                                    Searching Algo B
+                                    BinarySearch Visualizer
                                 </Link>
                             </li>
                             <li>
                                 <Link
-                                    to="/searching/algoC"
+                                    to="/searching/algo3"
                                     className="text-gray-700 hover:text-green-500 transition-colors flex items-center"
                                 >
                                     <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                                    Searching Algo C
+                                    Search Algorithm Race
                                 </Link>
                             </li>
                         </ul>
                     </motion.div>
-
 
                     {/* Sorting Algos */}
                     <motion.div
@@ -147,7 +146,7 @@ const Home = () => {
                                     className="text-gray-700 hover:text-purple-500 transition-colors flex items-center"
                                 >
                                     <span className="w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
-                                    Sorting Algo A
+                                    BubbleSort Visualizer
                                 </Link>
                             </li>
                             <li>
@@ -156,7 +155,7 @@ const Home = () => {
                                     className="text-gray-700 hover:text-purple-500 transition-colors flex items-center"
                                 >
                                     <span className="w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
-                                    Sorting Algo B
+                                    InsertionSort Visualizer
                                 </Link>
                             </li>
                             <li>
@@ -165,7 +164,34 @@ const Home = () => {
                                     className="text-gray-700 hover:text-purple-500 transition-colors flex items-center"
                                 >
                                     <span className="w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
-                                    Sorting Algo C
+                                    SelectionSort Visualizer
+                                </Link>
+                            </li>
+                            <li>
+                                <Link
+                                    to="/sorting/algoD"
+                                    className="text-gray-700 hover:text-purple-500 transition-colors flex items-center"
+                                >
+                                    <span className="w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
+                                    MergeSort Visualizer
+                                </Link>
+                            </li>
+                            <li>
+                                <Link
+                                    to="/sorting/algoE"
+                                    className="text-gray-700 hover:text-purple-500 transition-colors flex items-center"
+                                >
+                                    <span className="w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
+                                    QuickSort Visualizer
+                                </Link>
+                            </li>
+                            <li>
+                                <Link
+                                    to="/sorting/algoF"
+                                    className="text-gray-700 hover:text-purple-500 transition-colors flex items-center"
+                                >
+                                    <span className="w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
+                                    Sorting Algorithm Race
                                 </Link>
                             </li>
                         </ul>
@@ -191,7 +217,7 @@ const Home = () => {
                                     className="text-gray-700 hover:text-red-500 transition-colors flex items-center"
                                 >
                                     <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
-                                    Backtracking Algo X
+                                    NQueens Visualizer
                                 </Link>
                             </li>
                             <li>
@@ -200,18 +226,10 @@ const Home = () => {
                                     className="text-gray-700 hover:text-red-500 transition-colors flex items-center"
                                 >
                                     <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
-                                    Backtracking Algo Y
+                                    SudokuSolver Visualizer
                                 </Link>
                             </li>
-                            <li>
-                                <Link
-                                    to="/backtracking/algoZ"
-                                    className="text-gray-700 hover:text-red-500 transition-colors flex items-center"
-                                >
-                                    <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
-                                    Backtracking Algo Z
-                                </Link>
-                            </li>
+
                         </ul>
                     </motion.div>
 
@@ -235,7 +253,7 @@ const Home = () => {
                                     className="text-gray-700 hover:text-violet-500 transition-colors flex items-center"
                                 >
                                     <span className="w-2 h-2 bg-violet-500 rounded-full mr-2"></span>
-                                    Graph Algo 1
+                                    BFS Visualizer
                                 </Link>
                             </li>
                             <li>
@@ -244,7 +262,7 @@ const Home = () => {
                                     className="text-gray-700 hover:text-violet-500 transition-colors flex items-center"
                                 >
                                     <span className="w-2 h-2 bg-violet-500 rounded-full mr-2"></span>
-                                    Graph Algo 2
+                                    DFS Visualizer
                                 </Link>
                             </li>
                             <li>
@@ -253,11 +271,146 @@ const Home = () => {
                                     className="text-gray-700 hover:text-violet-500 transition-colors flex items-center"
                                 >
                                     <span className="w-2 h-2 bg-violet-500 rounded-full mr-2"></span>
-                                    Graph Algo 3
+                                    Dijkstra Visualizer
+                                </Link>
+                            </li>
+                            <li>
+                                <Link
+                                    to="/graph/algo4"
+                                    className="text-gray-700 hover:text-violet-500 transition-colors flex items-center"
+                                >
+                                    <span className="w-2 h-2 bg-violet-500 rounded-full mr-2"></span>
+                                    PrimsAlgorithm Visualizer
+                                </Link>
+                            </li>
+                            <li>
+                                <Link
+                                    to="/graph/algo5"
+                                    className="text-gray-700 hover:text-violet-500 transition-colors flex items-center"
+                                >
+                                    <span className="w-2 h-2 bg-violet-500 rounded-full mr-2"></span>
+                                    KruskalsAlgorithm Visualizer
                                 </Link>
                             </li>
                         </ul>
                     </motion.div>
+
+                    {/* Dynamic Programming  */}
+                    <motion.div
+                        initial="hidden"
+                        whileInView="visible"
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.8 }}
+                        variants={zoomIn}
+                        className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-transform duration-300 border border-gray-100 hover:scale-105"
+                    >
+                        <h3 className="text-xl font-bold mb-2 text-yellow-600">Dynamic Programming</h3>
+                        <p className="text-sm text-gray-600 mb-4">
+                            Solve complex problems by breaking them down into smaller subproblems and storing intermediate results.
+                        </p>
+                        <ul className="space-y-2">
+                            <li>
+                                <Link
+                                    to="/dp/algo1"
+                                    className="text-gray-700 hover:text-yellow-500 transition-colors flex items-center"
+                                >
+                                    <span className="w-2 h-2 bg-yellow-500 rounded-full mr-2"></span>
+                                    Fibonacci Visualizer
+                                </Link>
+                            </li>
+
+                        </ul>
+                    </motion.div>
+
+                    {/* Tree Algos */}
+                    <motion.div
+                        initial="hidden"
+                        whileInView="visible"
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.8 }}
+                        variants={zoomIn}
+                        className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-transform duration-300 border border-gray-100 hover:scale-105"
+                    >
+                        <h3 className="text-xl font-bold mb-2 text-green-600">Tree Algos</h3>
+                        <p className="text-sm text-gray-600 mb-4">
+                            Understand tree-based approaches for searching, sorting, and more.
+                        </p>
+                        <ul className="space-y-2">
+                            <li>
+                                <Link
+                                    to="/tree/algo1"
+                                    className="text-gray-700 hover:text-green-500 transition-colors flex items-center"
+                                >
+                                    <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                                    TreeTraversalVisualizerm, PreOrder , InOrder, PostOrder
+                                </Link>
+                            </li>
+                            <li>
+                                <Link
+                                    to="/tree/algo2"
+                                    className="text-gray-700 hover:text-green-500 transition-colors flex items-center"
+                                >
+                                    <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                                    BST Operations
+                                </Link>
+                            </li>
+                        </ul>
+                    </motion.div>
+
+                    {/* Greedy Algos */}
+                    <motion.div
+                        initial="hidden"
+                        whileInView="visible"
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.8 }}
+                        variants={zoomIn}
+                        className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-transform duration-300 border border-gray-100 hover:scale-105"
+                    >
+                        <h3 className="text-xl font-bold mb-2 text-red-600">Greedy Algos</h3>
+                        <p className="text-sm text-gray-600 mb-4">
+                            Solve problems by making decisions based on local optima.
+                        </p>
+                        <ul className="space-y-2">
+                            <li>
+                                <Link
+                                    to="/greedy/algo1"
+                                    className="text-gray-700 hover:text-red-500 transition-colors flex items-center"
+                                >
+                                    <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
+                                    HuffmanCoding Visualizer
+                                </Link>
+                            </li>
+                        </ul>
+                    </motion.div>
+
+                    {/* Mathematical Algorithms GCD */}
+
+                    <motion.div
+                        initial="hidden"
+                        whileInView="visible"
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.8 }}
+                        variants={zoomIn}
+                        className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-transform duration-300 border border-gray-100 hover:scale-105"
+                    >
+                        <h3 className="text-xl font-bold mb-2 text-blue-600">Mathematical Algorithms</h3>
+                        <p className="text-sm text-gray-600 mb-4">
+                          Discover efficient methods like Euclid’s algorithm for GCD and prime factorization, where complex problems are broken down into simple, logical steps.
+                        </p>
+                        <ul className="space-y-2">
+                            <li>
+                                <Link
+                                    to="/math/algo1"
+                                    className="text-gray-700 hover:text-blue-500 transition-colors flex items-center"
+                                >
+                                    <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                                    GCD Visualizer
+                                </Link>
+                            </li>
+
+                        </ul>
+                    </motion.div>
+
                 </div>
             </main>
 
@@ -275,7 +428,7 @@ const Home = () => {
                         <Code className="h-5 w-5 mr-2" />
                         <span className="font-semibold">DSA Visualizer</span>
                     </div>
-                    <p>&copy; {new Date().getFullYear()} DSA Visualizer. All rights reserved.</p>
+                    <p>&copy; {new Date().getFullYear()} DSA Visualizer | Made by Nikhil Patil | All rights reserved.</p>
                 </div>
             </motion.footer>
         </div>

@@ -1,25 +1,34 @@
 import React, { useState, useEffect, useCallback } from 'react';
 
-// Utility function to generate a random graph without duplicate edges.
+// Improved utility function to generate simpler, more understandable random graphs
 const generateRandomGraph = (numNodes = 5) => {
   const nodes = [];
   for (let i = 0; i < numNodes; i++) {
     nodes.push({
       id: i,
       label: String.fromCharCode(65 + i), // A, B, C, etc.
-      x: Math.floor(Math.random() * 500) + 50,  // x between 50 and 550
-      y: Math.floor(Math.random() * 300) + 50,  // y between 50 and 350
+      // Arrange nodes in a more structured layout (circular pattern)
+      x: Math.cos(2 * Math.PI * i / numNodes) * 200 + 300,
+      y: Math.sin(2 * Math.PI * i / numNodes) * 150 + 200,
     });
   }
   
   const edges = [];
-  // Ensure connectivity by chaining nodes.
-  for (let i = 1; i < numNodes; i++) {
-    edges.push({ source: i - 1, target: i });
-  }
-  // Add additional random edges while preventing duplicates.
+  // Create a simple connected structure (circular path)
   for (let i = 0; i < numNodes; i++) {
-    for (let j = i + 1; j < numNodes; j++) {
+    edges.push({ 
+      source: i, 
+      target: (i + 1) % numNodes 
+    });
+  }
+  
+  // Add a few additional edges for interest, but limit the complexity
+  const maxAdditionalEdges = Math.min(numNodes - 2, 3); // Limit additional edges
+  let addedEdges = 0;
+  
+  // Try to add a few random non-adjacent edges
+  for (let i = 0; i < numNodes && addedEdges < maxAdditionalEdges; i++) {
+    for (let j = i + 2; j < numNodes && j !== (i + 1) % numNodes && addedEdges < maxAdditionalEdges; j++) {
       if (
         edges.some(edge => 
           (edge.source === i && edge.target === j) ||
@@ -28,8 +37,10 @@ const generateRandomGraph = (numNodes = 5) => {
       )
         continue;
       
-      if (Math.random() < 0.4) {
+      // Lower probability for additional edges
+      if (Math.random() < 0.25) {
         edges.push({ source: i, target: j });
+        addedEdges++;
       }
     }
   }
@@ -56,10 +67,10 @@ const BFSVisualizer = () => {
   const [animationSpeed, setAnimationSpeed] = useState(1000);
 
   // Utility delay function.
-  const delay = useCallback((ms) => new Promise(resolve => setTimeout(resolve, ms)), []);
+  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
   // Asynchronous BFS algorithm with visual updates.
-  const bfs = async (start) => {
+  const bfs = useCallback(async (start) => {
     setIsRunning(true);
     const visitedSet = new Set();
     const q = [];
@@ -107,7 +118,7 @@ const BFSVisualizer = () => {
     }
     setCurrent(null);
     setIsRunning(false);
-  };
+  }, [graph, animationSpeed]);
 
   // Handlers.
   const handleNodeClick = (nodeId) => {
@@ -117,6 +128,13 @@ const BFSVisualizer = () => {
 
   const handleStart = () => {
     if (startNode !== null && !isRunning) {
+      // Ensure we reset any previous state
+      setVisited([]);
+      setQueue([]);
+      setCurrent(null);
+      setActiveEdge(null);
+      
+      // Start the BFS algorithm
       bfs(startNode);
     }
   };
@@ -323,7 +341,7 @@ const BFSVisualizer = () => {
                       ${isCurrent ? 'fill-yellow-300 animate-pulse' : isVisited ? 'fill-green-300' : 'fill-white'}
                     `}
                     stroke="black"
-                    strokeWidth="2"
+                    strokeWidth={isStart ? "4" : "2"}
                   />
                   <text
                     x={node.x}
@@ -374,7 +392,7 @@ const BFSVisualizer = () => {
               <p className="mb-2">
                 <strong>Start Node:</strong>{' '}
                 {startNode !== null 
-                  ? graph.nodes.find(n => n.id === startNode).label 
+                  ? graph.nodes.find(n => n.id === startNode)?.label 
                   : 'None'}
               </p>
             </div>
@@ -382,19 +400,19 @@ const BFSVisualizer = () => {
               <p className="mb-2">
                 <strong>Current Node:</strong>{' '}
                 {current !== null 
-                  ? graph.nodes.find(n => n.id === current).label 
+                  ? graph.nodes.find(n => n.id === current)?.label 
                   : 'None'}
               </p>
               <p className="mb-2">
                 <strong>Queue:</strong>{' '}
                 {queue.length > 0 
-                  ? queue.map(id => graph.nodes.find(n => n.id === id).label).join(', ')
+                  ? queue.map(id => graph.nodes.find(n => n.id === id)?.label).join(', ')
                   : 'Empty'}
               </p>
               <p className="mb-2">
                 <strong>Visited Order:</strong>{' '}
                 {visited.length > 0 
-                  ? visited.map(id => graph.nodes.find(n => n.id === id).label).join(' -> ')
+                  ? visited.map(id => graph.nodes.find(n => n.id === id)?.label).join(' -> ')
                   : 'None'}
               </p>
             </div>
