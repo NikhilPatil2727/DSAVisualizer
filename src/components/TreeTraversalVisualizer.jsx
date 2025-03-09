@@ -3,7 +3,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 // Helper function to construct a binary tree from a level-order array with unique IDs
 const buildTree = (nodes) => {
   if (!nodes || nodes.length === 0 || nodes[0] === null) return null;
-  
+
   let idCounter = 1;
   const root = { id: idCounter++, value: nodes[0], left: null, right: null };
   const queue = [root];
@@ -39,20 +39,20 @@ const TreeNode = ({ node, current, traversedEdges }) => {
   const isCurrent = current === node.id;
 
   return (
-    <div className="flex flex-col items-center gap-1 md:gap-2 relative">
+    <div className="flex flex-col items-center gap-1 sm:gap-1.5 md:gap-2 lg:gap-3 relative">
       <div className="flex flex-col items-center">
         {/* Top connecting line */}
         <div
           className={`
-            h-4 md:h-6 w-1 rounded-full transition-colors duration-300 ease-in-out
+            h-3 sm:h-4 md:h-5 lg:h-6 w-1 rounded-full transition-colors duration-300 ease-in-out
             ${traversedEdges.some(e => e.to === node.id) ? 'bg-green-500' : 'bg-gray-400'}
           `}
         />
         {/* Node circle */}
         <div
           className={`
-            w-8 h-8 md:w-12 md:h-12 rounded-full flex items-center justify-center text-white 
-            text-sm md:text-base font-bold relative z-10
+            w-6 h-6 sm:w-7 sm:h-7 md:w-10 md:h-10 lg:w-12 lg:h-12 rounded-full flex items-center justify-center text-white
+            text-xs sm:text-sm md:text-base lg:text-lg font-bold relative z-10
             transform transition-transform duration-300 ease-in-out
             ${isCurrent ? 'bg-purple-500 scale-110 shadow-xl' : 'bg-blue-500'}
           `}
@@ -62,18 +62,16 @@ const TreeNode = ({ node, current, traversedEdges }) => {
         {/* Bottom connecting line */}
         <div
           className={`
-            h-4 md:h-6 w-1 rounded-full transition-colors duration-300 ease-in-out
-            ${
-              (node.left || node.right) && traversedEdges.some(e => e.from === node.id)
-                ? 'bg-green-500'
-                : 'bg-gray-400'
-            }
+            h-3 sm:h-4 md:h-5 lg:h-6 w-1 rounded-full transition-colors duration-300 ease-in-out
+            ${(node.left || node.right) && traversedEdges.some(e => e.from === node.id)
+              ? 'bg-green-500'
+              : 'bg-gray-400'}
           `}
         />
       </div>
 
       {(node.left || node.right) && (
-        <div className="flex gap-4 md:gap-8 relative">
+        <div className="flex gap-2 sm:gap-3 md:gap-6 lg:gap-8 relative">
           {/* Horizontal connecting line across children */}
           <div
             className={`
@@ -84,7 +82,7 @@ const TreeNode = ({ node, current, traversedEdges }) => {
           {/* Left child */}
           <div className="relative">
             {node.left && (
-              <div className="absolute top-0 left-1/2 w-4 md:w-8 -translate-x-1/2">
+              <div className="absolute top-0 left-1/2 w-2 sm:w-3 md:w-6 lg:w-8 -translate-x-1/2">
                 <div
                   className={`
                     w-full h-1 rounded-full transition-colors duration-300 ease-in-out
@@ -102,7 +100,7 @@ const TreeNode = ({ node, current, traversedEdges }) => {
           {/* Right child */}
           <div className="relative">
             {node.right && (
-              <div className="absolute top-0 right-1/2 w-4 md:w-8 translate-x-1/2">
+              <div className="absolute top-0 right-1/2 w-2 sm:w-3 md:w-6 lg:w-8 translate-x-1/2">
                 <div
                   className={`
                     w-full h-1 rounded-full transition-colors duration-300 ease-in-out
@@ -133,10 +131,62 @@ const TreeTraversalVisualizer = () => {
   const [traversedEdges, setTraversedEdges] = useState([]);
   const [error, setError] = useState('');
   const [traversalType, setTraversalType] = useState('preorder');
+  const [zoom, setZoom] = useState(100);
 
   const isPausedRef = useRef(isPaused);
   useEffect(() => { isPausedRef.current = isPaused; }, [isPaused]);
   const cancelTraversalRef = useRef(false);
+  
+  // Handle resize observation
+  const treeContainerRef = useRef(null);
+  
+  useEffect(() => {
+    if (!tree || !treeContainerRef.current) return;
+    
+    // Automatic zoom adjustment based on tree size and container
+    const adjustZoom = () => {
+      const container = treeContainerRef.current;
+      if (!container) return;
+      
+      // Calculate a reasonable zoom based on the depth of the tree
+      const getTreeDepth = (node) => {
+        if (!node) return 0;
+        return 1 + Math.max(getTreeDepth(node.left), getTreeDepth(node.right));
+      };
+      
+      const treeDepth = getTreeDepth(tree);
+      const containerWidth = container.clientWidth;
+      
+      // Calculate zoom based on tree depth and container width
+      // The wider the tree, the lower the zoom percentage
+      let newZoom = 100;
+      if (treeDepth > 3) {
+        // Larger trees need smaller zoom on smaller screens
+        if (containerWidth < 640) { // Small screens
+          newZoom = Math.max(60, 100 - (treeDepth - 3) * 15);
+        } else if (containerWidth < 768) { // Medium screens
+          newZoom = Math.max(70, 100 - (treeDepth - 3) * 10);
+        } else if (containerWidth < 1024) { // Large screens
+          newZoom = Math.max(80, 100 - (treeDepth - 3) * 5);
+        }
+      }
+      
+      setZoom(newZoom);
+    };
+    
+    // Create a resize observer
+    const resizeObserver = new ResizeObserver(adjustZoom);
+    resizeObserver.observe(treeContainerRef.current);
+    
+    // Initial adjustment
+    adjustZoom();
+    
+    return () => {
+      if (treeContainerRef.current) {
+        resizeObserver.unobserve(treeContainerRef.current);
+      }
+    };
+  }, [tree]);
 
   const handleBuildTree = () => {
     try {
@@ -248,112 +298,153 @@ const TreeTraversalVisualizer = () => {
     setIsTraversing(false);
     setIsPaused(false);
     setError('');
+    setZoom(100);
   };
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-100 to-gray-200">
-      <header className="h-16 bg-gradient-to-r from-indigo-600 to-purple-600 text-white flex items-center justify-center shadow">
-        <h1 className="text-lg md:text-xl font-bold">Tree Traversal Visualizer</h1>
+      <header className="h-12 sm:h-14 md:h-16 bg-gradient-to-r from-indigo-600 to-purple-600 text-white flex items-center justify-center shadow">
+        <h1 className="text-base sm:text-lg md:text-xl font-bold">Tree Traversal Visualizer</h1>
       </header>
 
-      <div className="flex flex-col md:flex-row flex-grow overflow-hidden">
+      <div className="flex flex-col lg:flex-row flex-grow overflow-hidden">
         {/* Left Panel */}
-        <div className="w-full md:w-1/3 p-4 overflow-auto space-y-4">
-          <div className="bg-white rounded-xl p-4 shadow">
+        <div className="w-full lg:w-1/3 p-2 sm:p-3 md:p-4 overflow-auto space-y-3 md:space-y-4">
+          <div className="bg-white rounded-xl p-3 sm:p-4 shadow">
             <input
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              placeholder='Enter nodes (e.g., 1,2,3,2,5)'
-              className="w-full p-2 md:p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 mb-4"
+              placeholder="Enter nodes (e.g., 1,2,3,2,5)"
+              className="w-full p-2 md:p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 mb-3 md:mb-4 text-sm md:text-base"
             />
             <select
               value={traversalType}
               onChange={(e) => setTraversalType(e.target.value)}
-              className="w-full p-2 md:p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 mb-4"
+              className="w-full p-2 md:p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 mb-3 md:mb-4 text-sm md:text-base"
             >
               <option value="preorder">Pre-Order</option>
               <option value="inorder">In-Order</option>
               <option value="postorder">Post-Order</option>
             </select>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
               <button
                 onClick={handleBuildTree}
                 disabled={isTraversing}
-                className="px-3 py-1.5 md:px-4 md:py-2 text-sm md:text-base bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 disabled:opacity-50"
+                className="px-2 py-1 sm:px-3 sm:py-1.5 md:px-4 md:py-2 text-xs sm:text-sm md:text-base bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 disabled:opacity-50"
               >
                 Build Tree
               </button>
               <button
                 onClick={startTraversal}
                 disabled={!tree || isTraversing}
-                className="px-3 py-1.5 md:px-4 md:py-2 text-sm md:text-base bg-green-600 text-white rounded-lg shadow hover:bg-green-700 disabled:opacity-50"
+                className="px-2 py-1 sm:px-3 sm:py-1.5 md:px-4 md:py-2 text-xs sm:text-sm md:text-base bg-green-600 text-white rounded-lg shadow hover:bg-green-700 disabled:opacity-50"
               >
                 Start
               </button>
               <button
                 onClick={() => setIsPaused(true)}
                 disabled={!tree || !isTraversing || isPaused}
-                className="px-3 py-1.5 md:px-4 md:py-2 text-sm md:text-base bg-yellow-600 text-white rounded-lg shadow hover:bg-yellow-700 disabled:opacity-50"
+                className="px-2 py-1 sm:px-3 sm:py-1.5 md:px-4 md:py-2 text-xs sm:text-sm md:text-base bg-yellow-600 text-white rounded-lg shadow hover:bg-yellow-700 disabled:opacity-50"
               >
                 Pause
               </button>
               <button
                 onClick={() => setIsPaused(false)}
                 disabled={!tree || !isTraversing || !isPaused}
-                className="px-3 py-1.5 md:px-4 md:py-2 text-sm md:text-base bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 disabled:opacity-50"
+                className="px-2 py-1 sm:px-3 sm:py-1.5 md:px-4 md:py-2 text-xs sm:text-sm md:text-base bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 disabled:opacity-50"
               >
                 Resume
               </button>
               <button
                 onClick={handleReset}
-                className="px-3 py-1.5 md:px-4 md:py-2 text-sm md:text-base bg-red-600 text-white rounded-lg shadow hover:bg-red-700"
+                className="px-2 py-1 sm:px-3 sm:py-1.5 md:px-4 md:py-2 text-xs sm:text-sm md:text-base bg-red-600 text-white rounded-lg shadow hover:bg-red-700"
               >
                 Reset
               </button>
             </div>
-            {error && <div className="mt-3 text-center text-red-600 text-sm md:text-base">{error}</div>}
+            {error && <div className="mt-3 text-center text-red-600 text-xs sm:text-sm md:text-base">{error}</div>}
           </div>
 
-          <div className="bg-white rounded-xl p-4 shadow">
-            <h3 className="text-lg md:text-xl font-bold mb-3">Traversal Result</h3>
-            {resultOrder.length > 0 ? (
-              <p className="text-sm md:text-lg lg:text-xl font-semibold text-gray-800 break-all">
-                {resultOrder.join(' → ')}
-              </p>
-            ) : (
-              <p className="text-gray-500 text-sm md:text-base">No result yet.</p>
-            )}
+          <div className="bg-white rounded-xl p-3 sm:p-4 shadow">
+            <h3 className="text-base sm:text-lg md:text-xl font-bold mb-2 md:mb-3">Traversal Result</h3>
+            <div className="overflow-x-auto">
+              {resultOrder.length > 0 ? (
+                <p className="text-xs sm:text-sm md:text-base lg:text-lg font-semibold text-gray-800 whitespace-nowrap">
+                  {resultOrder.join(' → ')}
+                </p>
+              ) : (
+                <p className="text-gray-500 text-xs sm:text-sm md:text-base">No result yet.</p>
+              )}
+            </div>
           </div>
 
-          <div className="bg-white rounded-xl p-4 shadow">
-            <h3 className="text-lg md:text-xl font-bold mb-3">Legend</h3>
-            <div className="space-y-2">
+          <div className="bg-white rounded-xl p-3 sm:p-4 shadow">
+            <h3 className="text-base sm:text-lg md:text-xl font-bold mb-2 md:mb-3">Legend</h3>
+            <div className="space-y-1 sm:space-y-2">
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 md:w-5 md:h-5 bg-purple-500 rounded-full"></div>
-                <span className="text-sm md:text-base text-gray-700">Current Node</span>
+                <div className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 bg-purple-500 rounded-full"></div>
+                <span className="text-xs sm:text-sm md:text-base text-gray-700">Current Node</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 md:w-5 md:h-5 bg-blue-500 rounded-full"></div>
-                <span className="text-sm md:text-base text-gray-700">Unvisited Node</span>
+                <div className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 bg-blue-500 rounded-full"></div>
+                <span className="text-xs sm:text-sm md:text-base text-gray-700">Unvisited Node</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-1 md:w-5 md:h-1 bg-green-500 rounded-full"></div>
-                <span className="text-sm md:text-base text-gray-700">Traversed Path</span>
+                <div className="w-3 h-1 sm:w-4 sm:h-1 md:w-5 md:h-1 bg-green-500 rounded-full"></div>
+                <span className="text-xs sm:text-sm md:text-base text-gray-700">Traversed Path</span>
               </div>
             </div>
           </div>
+          
+          {/* Zoom controls for tree view */}
+          {tree && (
+            <div className="bg-white rounded-xl p-3 sm:p-4 shadow">
+              <h3 className="text-base sm:text-lg md:text-xl font-bold mb-2 md:mb-3">Tree Zoom</h3>
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={() => setZoom(prev => Math.max(40, prev - 10))}
+                  className="px-2 py-1 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                >
+                  -
+                </button>
+                <input
+                  type="range"
+                  min="40"
+                  max="150"
+                  value={zoom}
+                  onChange={(e) => setZoom(Number(e.target.value))}
+                  className="w-full"
+                />
+                <button 
+                  onClick={() => setZoom(prev => Math.min(150, prev + 10))}
+                  className="px-2 py-1 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                >
+                  +
+                </button>
+                <span className="text-xs sm:text-sm md:text-base text-gray-700">{zoom}%</span>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Right Panel */}
-        <div className="flex-1 p-4 overflow-auto flex items-center justify-center">
-          <div className="w-full bg-white border border-dashed border-gray-300 rounded-xl p-2 md:p-4 shadow-lg flex items-center justify-center">
+        {/* Right Panel - Responsive Tree Section */}
+        <div className="flex-1 p-2 sm:p-3 md:p-4 overflow-auto flex flex-col">
+          <div 
+            ref={treeContainerRef}
+            className="w-full h-full bg-white border border-dashed border-gray-300 rounded-xl p-2 sm:p-3 md:p-4 shadow-lg flex items-center justify-center overflow-auto"
+          >
             {tree ? (
-              <div className="transform scale-75 md:scale-100 transition-transform duration-300">
-                <TreeNode node={tree} current={current} traversedEdges={traversedEdges} />
+              <div className="overflow-auto w-full h-full flex items-center justify-center">
+                <div 
+                  style={{ transform: `scale(${zoom / 100})` }}
+                  className="transition-transform duration-300 origin-center"
+                >
+                  <TreeNode node={tree} current={current} traversedEdges={traversedEdges} />
+                </div>
               </div>
             ) : (
-              <div className="text-gray-500 text-sm md:text-base">
+              <div className="text-gray-500 text-xs sm:text-sm md:text-base">
                 Build a tree to visualize traversal.
               </div>
             )}
