@@ -3,68 +3,54 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 /* ---------------------------------------------
  * 1) Utility: Generate a random weighted graph
  * ---------------------------------------------
- * - Creates a simple, understandable graph structure
- * - Places nodes in a circular layout for clarity
- * - Adds minimal cross-edges for interesting paths
- * - Uses simple weight ranges
  */
 const generateRandomGraph = (numNodes = 6) => {
   const nodes = [];
-  
-  // Create nodes in a more organized circular layout instead of random positions
   const centerX = 300;
   const centerY = 200;
   const radius = 150;
   
   for (let i = 0; i < numNodes; i++) {
-    // Position nodes in a circle for better visualization
     const angle = (i / numNodes) * 2 * Math.PI;
     const x = centerX + radius * Math.cos(angle);
     const y = centerY + radius * Math.sin(angle);
     
     nodes.push({
       id: i,
-      label: String.fromCharCode(65 + i), // A, B, C, ...
-      x: x,
-      y: y,
+      label: String.fromCharCode(65 + i),
+      x,
+      y,
     });
   }
 
   const edges = [];
-  
-  // Create a simple circular path to ensure connectivity
   for (let i = 0; i < numNodes; i++) {
     edges.push({
       source: i,
-      target: (i + 1) % numNodes, // Connect to next node, with last connecting to first
-      weight: Math.floor(Math.random() * 10) + 1, // Range: [1..10] for simpler weights
+      target: (i + 1) % numNodes,
+      weight: Math.floor(Math.random() * 10) + 1,
     });
   }
   
-  // Add just a few cross-edges (chords) for alternate paths, but not too many
-  const maxExtraEdges = Math.min(numNodes - 3, 3); // Limit extra edges based on node count
+  const maxExtraEdges = Math.min(numNodes - 3, 3);
   let extraEdgesAdded = 0;
   
-  // Try to add a few longer-distance connections
   for (let i = 0; i < numNodes && extraEdgesAdded < maxExtraEdges; i++) {
-    // Connect to a node that's further away in the sequence (not adjacent)
     const target = (i + 2 + Math.floor(Math.random() * (numNodes - 4))) % numNodes;
-    
-    // Skip if it would create a duplicate edge
     if (
       edges.some(e =>
         (e.source === i && e.target === target) ||
         (e.source === target && e.target === i)
-      ) || 
-      Math.abs(i - target) <= 1 || // Skip if they're adjacent (already connected)
-      Math.abs(i - target) === numNodes - 1 // Skip if they're the first and last (already connected)
+      ) ||
+      Math.abs(i - target) <= 1 ||
+      Math.abs(i - target) === numNodes - 1
     ) {
       continue;
     }
     
     edges.push({
       source: i,
-      target: target,
+      target,
       weight: Math.floor(Math.random() * 10) + 1,
     });
     extraEdgesAdded++;
@@ -78,38 +64,30 @@ const generateRandomGraph = (numNodes = 6) => {
  * ---------------------------------------------------------
  */
 const DijkstraVisualizer = () => {
-  // ---- Graph states ----
   const [graph, setGraph] = useState(generateRandomGraph(6));
   const [nodeCount, setNodeCount] = useState(6);
 
-  // ---- Dijkstra states ----
-  const [startNode, setStartNode] = useState(0);   // index of the start node
-  const [distances, setDistances] = useState([]);  // final distance to each node
-  const [previous, setPrevious] = useState([]);    // to reconstruct final paths
+  const [startNode, setStartNode] = useState(0);
+  const [distances, setDistances] = useState([]);
+  const [previous, setPrevious] = useState([]);
   const [visited, setVisited] = useState(new Set());
   const [unvisited, setUnvisited] = useState([]);
   
-  // For stepping through the algorithm
   const [stepIndex, setStepIndex] = useState(0);
-  const [steps, setSteps] = useState([]);          // a list of "snapshot" objects
+  const [steps, setSteps] = useState([]);
   const [isRunning, setIsRunning] = useState(false);
   const [autoPlay, setAutoPlay] = useState(false);
   
-  // Animation
   const [animationSpeed, setAnimationSpeed] = useState(1000);
-  const [activeEdge, setActiveEdge] = useState(null);   // {source, target} being relaxed
-  const [highlightedEdges, setHighlightedEdges] = useState([]); // final shortest-path edges
+  const [activeEdge, setActiveEdge] = useState(null);
+  const [highlightedEdges, setHighlightedEdges] = useState([]);
 
-  // UI
   const [showGuide, setShowGuide] = useState(true);
 
-  // Reference for auto-play interval
   const autoPlayRef = useRef(null);
 
   /* ---------------------------------------------------------
    * 3) Dijkstra Step Generation
-   *    We generate a sequence of "steps" so we can animate 
-   *    them one at a time with Next Step or Auto Play.
    * ---------------------------------------------------------
    */
   const buildDijkstraSteps = useCallback((start) => {
@@ -120,12 +98,9 @@ const DijkstraVisualizer = () => {
     const allNodes = Array.from({ length: n }, (_, i) => i);
 
     dist[start] = 0;
-
-    // We'll store each "step" as an object describing the state
     const stepsArray = [];
 
     const getNeighbors = (node) => {
-      // return array of { neighbor, weight }
       const neighbors = [];
       for (let e of graph.edges) {
         if (e.source === node) {
@@ -137,7 +112,6 @@ const DijkstraVisualizer = () => {
       return neighbors;
     };
 
-    // A simple "priority queue" approach using unvisited + dist
     const pickNextNode = () => {
       let minNode = null;
       let minDist = Infinity;
@@ -152,13 +126,9 @@ const DijkstraVisualizer = () => {
 
     while (visitedSet.size < n) {
       const currentNode = pickNextNode();
-      if (currentNode === null) {
-        // All remaining nodes are unreachable
-        break;
-      }
+      if (currentNode === null) break;
       visitedSet.add(currentNode);
 
-      // Record a step: we've chosen currentNode
       stepsArray.push({
         currentNode,
         distSnapshot: [...dist],
@@ -167,13 +137,11 @@ const DijkstraVisualizer = () => {
         updatedNode: null,
       });
 
-      // Relax edges
       const neighbors = getNeighbors(currentNode);
       for (let { neighbor, weight } of neighbors) {
         if (!visitedSet.has(neighbor)) {
           const alt = dist[currentNode] + weight;
           if (alt < dist[neighbor]) {
-            // We'll push a step for the "relaxation" of neighbor
             stepsArray.push({
               currentNode,
               distSnapshot: [...dist],
@@ -181,7 +149,6 @@ const DijkstraVisualizer = () => {
               activeEdge: { source: currentNode, target: neighbor },
               updatedNode: neighbor,
             });
-
             dist[neighbor] = alt;
             prev[neighbor] = currentNode;
           }
@@ -189,7 +156,6 @@ const DijkstraVisualizer = () => {
       }
     }
 
-    // Final step: record the final distances
     stepsArray.push({
       currentNode: null,
       distSnapshot: [...dist],
@@ -213,16 +179,13 @@ const DijkstraVisualizer = () => {
     setActiveEdge(null);
     setHighlightedEdges([]);
     
-    // Build steps
     const { dist, prev, stepsArray } = buildDijkstraSteps(startNode);
     setDistances(dist);
     setPrevious(prev);
     setSteps(stepsArray);
 
-    // We'll keep track of unvisited so we can highlight them if needed
     setUnvisited([...Array(graph.nodes.length).keys()]);
     setVisited(new Set());
-
   }, [startNode, buildDijkstraSteps, graph.nodes.length]);
 
   /* ---------------------------------------------------------
@@ -231,22 +194,17 @@ const DijkstraVisualizer = () => {
    */
   const runNextStep = useCallback(() => {
     if (stepIndex >= steps.length) {
-      // No more steps
       setIsRunning(false);
       return;
     }
 
     const step = steps[stepIndex];
-    // Update distances, visited, activeEdge, etc. based on this step
     setDistances(step.distSnapshot);
     setVisited(step.visitedSnapshot);
     setActiveEdge(step.activeEdge || null);
-
     setStepIndex(stepIndex + 1);
 
-    // If this is the final step, highlight final shortest paths
     if (step.isFinal) {
-      // Build final highlight edges from 'previous' array
       const finalEdges = [];
       for (let i = 0; i < previous.length; i++) {
         if (previous[i] !== null) {
@@ -259,29 +217,26 @@ const DijkstraVisualizer = () => {
   }, [stepIndex, steps, previous]);
 
   /* ---------------------------------------------------------
-   * 6) Auto-play the algorithm (step-by-step with a timer)
+   * 6) Auto-play the algorithm
    * ---------------------------------------------------------
    */
   const handleAutoPlay = useCallback(() => {
     if (autoPlay) {
-      // Stop auto-play
       setAutoPlay(false);
       if (autoPlayRef.current) {
         clearInterval(autoPlayRef.current);
         autoPlayRef.current = null;
       }
     } else {
-      // Start auto-play
       setAutoPlay(true);
       autoPlayRef.current = setInterval(() => {
         setStepIndex((prevIndex) => {
           const nextIndex = prevIndex + 1;
           if (nextIndex >= steps.length) {
-            // Stop
             clearInterval(autoPlayRef.current);
             setAutoPlay(false);
             setIsRunning(false);
-            return prevIndex; // remain
+            return prevIndex;
           }
           return nextIndex;
         });
@@ -289,7 +244,6 @@ const DijkstraVisualizer = () => {
     }
   }, [autoPlay, steps.length, animationSpeed]);
 
-  // Whenever stepIndex changes in auto-play, we update the states
   useEffect(() => {
     if (stepIndex < steps.length && steps.length > 0) {
       const step = steps[stepIndex];
@@ -298,7 +252,6 @@ const DijkstraVisualizer = () => {
       setActiveEdge(step.activeEdge || null);
 
       if (step.isFinal) {
-        // highlight final shortest paths
         const finalEdges = [];
         for (let i = 0; i < previous.length; i++) {
           if (previous[i] !== null) {
@@ -316,7 +269,6 @@ const DijkstraVisualizer = () => {
     }
   }, [stepIndex, steps, previous]);
 
-  // Clear auto-play interval on unmount
   useEffect(() => {
     return () => {
       if (autoPlayRef.current) {
@@ -330,10 +282,8 @@ const DijkstraVisualizer = () => {
    * ---------------------------------------------------------
    */
   const handleFindPath = () => {
-    // Simply initialize, then run all steps at once
     initializeDijkstra();
     setTimeout(() => {
-      // after building steps, we can step through them all quickly
       for (let i = 0; i < steps.length; i++) {
         setTimeout(() => {
           runNextStep();
@@ -343,7 +293,6 @@ const DijkstraVisualizer = () => {
   };
 
   const handleNextStep = () => {
-    // If not initialized, do so
     if (!isRunning && stepIndex === 0) {
       initializeDijkstra();
       setTimeout(() => runNextStep(), 100);
@@ -353,7 +302,6 @@ const DijkstraVisualizer = () => {
   };
 
   const handleReset = () => {
-    // Stop everything, reset states
     if (autoPlayRef.current) {
       clearInterval(autoPlayRef.current);
       autoPlayRef.current = null;
@@ -392,24 +340,16 @@ const DijkstraVisualizer = () => {
     setAnimationSpeed(parseInt(e.target.value, 10));
   };
 
-  // Auto-hide the guide after 10 seconds
   useEffect(() => {
     const timer = setTimeout(() => setShowGuide(false), 10000);
     return () => clearTimeout(timer);
   }, []);
 
   /* ---------------------------------------------------------
-   * 8) Rendering the Graph
+   * 8) Rendering the Graph (UPDATED with Animations)
    * ---------------------------------------------------------
-   * We'll highlight:
-   * - The active edge (pink or a special color).
-   * - The final shortest path edges (green).
-   * - The visited nodes (different fill color).
-   * - The current node (yellow).
-   * - The start node (blue stroke).
    */
   const isEdgeHighlighted = (edge) => {
-    // If it's in the final shortest path edges
     if (
       highlightedEdges.some(
         (e) =>
@@ -417,50 +357,49 @@ const DijkstraVisualizer = () => {
           (e.source === edge.target && e.target === edge.source)
       )
     ) {
-      return 'stroke-green-500';
+      return 'stroke-green-600 stroke-3 [stroke-dasharray:8] animate-final-path';
     }
-    // If it's currently being relaxed
     if (
       activeEdge &&
       ((activeEdge.source === edge.source && activeEdge.target === edge.target) ||
         (activeEdge.source === edge.target && activeEdge.target === edge.source))
     ) {
-      return 'stroke-pink-500 animate-draw';
+      return 'stroke-red-600 stroke-3 animate-active-edge';
     }
-    // default
-    return 'stroke-gray-300';
+    return 'stroke-gray-300 stroke-2';
   };
 
-  // Reconstruct the text for weight on each edge
   const getEdgeLabelPosition = (sourceNode, targetNode) => {
-    // midpoint
     const mx = (sourceNode.x + targetNode.x) / 2;
     const my = (sourceNode.y + targetNode.y) / 2;
     return { x: mx, y: my };
   };
 
-  // For final path highlight motion
   const getActiveEdgeMotion = () => {
     if (!activeEdge) return null;
     const sourceActive = graph.nodes.find((n) => n.id === activeEdge.source);
     const targetActive = graph.nodes.find((n) => n.id === activeEdge.target);
     if (!sourceActive || !targetActive) return null;
-    const pathStr = `M ${sourceActive.x} ${sourceActive.y} L ${targetActive.x} ${targetActive.y}`;
-    return pathStr;
+    return `M ${sourceActive.x} ${sourceActive.y} L ${targetActive.x} ${targetActive.y}`;
   };
 
   return (
     <div className="min-h-screen bg-gray-100 p-4 relative">
-      {/* Inline CSS for stroke-dash animations */}
       <style>{`
-        @keyframes drawLine {
-          from { stroke-dashoffset: 100; }
+        @keyframes activeEdgePulse {
+          0% { stroke-width: 2; opacity: 0.8; }
+          50% { stroke-width: 4; opacity: 1; }
+          100% { stroke-width: 2; opacity: 0.8; }
+        }
+        @keyframes finalPathDash {
+          from { stroke-dashoffset: 20; }
           to { stroke-dashoffset: 0; }
         }
-        .animate-draw {
-          stroke-dasharray: 100;
-          stroke-dashoffset: 100;
-          animation: drawLine 1s forwards;
+        .animate-active-edge {
+          animation: activeEdgePulse 1s infinite;
+        }
+        .animate-final-path {
+          animation: finalPathDash 2s linear infinite;
         }
       `}</style>
 
@@ -472,13 +411,13 @@ const DijkstraVisualizer = () => {
             <ul className="list-disc pl-5 mb-4 text-gray-700">
               <li>Select a start node from the dropdown.</li>
               <li>
-                Press <span className="font-semibold">Find Path</span> to automatically animate the algorithm's execution through all steps.
+                Press <span className="font-semibold">Find Path</span> to automatically animate the algorithm's execution.
               </li>
               <li>
                 Use <span className="font-semibold">Next Step</span> to manually advance one step at a time.
               </li>
               <li>
-                Alternatively, select <span className="font-semibold">Auto Play</span> to continuously run the algorithm with your chosen speed.
+                Alternatively, select <span className="font-semibold">Auto Play</span> to continuously run the algorithm.
               </li>
               <li>
                 Adjust <span className="font-semibold">Node Count</span> and <span className="font-semibold">Animation Speed</span> as desired.
@@ -505,7 +444,6 @@ const DijkstraVisualizer = () => {
 
       {/* Controls */}
       <div className="max-w-5xl mx-auto flex flex-col md:flex-row gap-4 mb-4">
-        {/* Left controls */}
         <div className="flex-1 bg-white p-4 rounded shadow space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Node Count</label>
@@ -572,9 +510,7 @@ const DijkstraVisualizer = () => {
             <button
               onClick={handleAutoPlay}
               disabled={steps.length === 0 && !isRunning}
-              className={`px-4 py-2 text-white rounded transition-colors 
-                ${autoPlay ? 'bg-red-500 hover:bg-red-600' : 'bg-purple-600 hover:bg-purple-700'} 
-                disabled:opacity-50`}
+              className={`px-4 py-2 text-white rounded transition-colors ${autoPlay ? 'bg-red-500 hover:bg-red-600' : 'bg-purple-600 hover:bg-purple-700'} disabled:opacity-50`}
             >
               {autoPlay ? 'Stop' : 'Auto Play'}
             </button>
@@ -595,20 +531,14 @@ const DijkstraVisualizer = () => {
           </div>
         </div>
         
-        {/* Right: Distances Table */}
         <div className="flex-1 bg-white p-4 rounded shadow">
           <h2 className="text-xl font-semibold mb-4 text-gray-800">Distances</h2>
           {distances.length > 0 ? (
             <div className="grid grid-cols-2 gap-2">
               {graph.nodes.map((node, idx) => (
-                <div
-                  key={node.id}
-                  className="flex items-center justify-between border-b border-gray-200 pb-1"
-                >
+                <div key={node.id} className="flex items-center justify-between border-b border-gray-200 pb-1">
                   <span className="text-gray-700 font-medium">{node.label}:</span>
-                  <span>
-                    {distances[idx] === Infinity ? '∞' : distances[idx]}
-                  </span>
+                  <span>{distances[idx] === Infinity ? '∞' : distances[idx]}</span>
                 </div>
               ))}
             </div>
@@ -622,9 +552,23 @@ const DijkstraVisualizer = () => {
       <div className="max-w-5xl mx-auto bg-white rounded shadow p-4">
         <svg viewBox="0 0 600 400" className="w-full h-auto">
           <defs>
-            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
-              <polygon points="0 0, 10 3.5, 0 7" fill="blue" />
+            <marker 
+              id="arrowhead-active" 
+              markerWidth="12" 
+              markerHeight="12" 
+              refX="10" 
+              refY="6" 
+              orient="auto"
+            >
+              <path d="M0,0 L0,12 L12,6 Z" fill="red" />
             </marker>
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+              <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
           </defs>
 
           {/* Edges */}
@@ -632,6 +576,8 @@ const DijkstraVisualizer = () => {
             const sourceNode = graph.nodes[edge.source];
             const targetNode = graph.nodes[edge.target];
             const highlightClass = isEdgeHighlighted(edge);
+            const isActive = highlightClass.includes('animate-active-edge');
+            
             return (
               <g key={i}>
                 <line
@@ -639,50 +585,49 @@ const DijkstraVisualizer = () => {
                   y1={sourceNode.y}
                   x2={targetNode.x}
                   y2={targetNode.y}
-                  strokeWidth="2"
                   className={`transition-all duration-300 ${highlightClass}`}
+                  markerEnd={isActive ? "url(#arrowhead-active)" : undefined}
                 />
-                {/* Edge weight label at midpoint */}
-                {(() => {
-                  const { x, y } = getEdgeLabelPosition(sourceNode, targetNode);
-                  return (
-                    <text
-                      x={x}
-                      y={y}
-                      textAnchor="middle"
-                      dy="-5"
-                      className="fill-gray-700 font-semibold text-sm"
-                    >
-                      {edge.weight}
-                    </text>
-                  );
-                })()}
+                <text
+                  x={(sourceNode.x + targetNode.x) / 2}
+                  y={(sourceNode.y + targetNode.y) / 2}
+                  textAnchor="middle"
+                  dy="-5"
+                  className={`text-sm font-bold ${isActive ? 'text-red-600 animate-pulse' : 'text-gray-700'}`}
+                >
+                  {edge.weight}
+                </text>
               </g>
             );
           })}
 
-          {/* Active-edge traveler animation (a small circle) */}
+          {/* Active-edge animation */}
           {activeEdge && getActiveEdgeMotion() && (
-            <circle r="5" fill="red">
+            <path d="M-5,-5 L5,0 L-5,5 Z" fill="red" filter="url(#glow)">
               <animateMotion
-                dur={`${animationSpeed / 1000}s`}
+                dur={`${animationSpeed/1000}s`}
                 path={getActiveEdgeMotion()}
                 fill="freeze"
+                rotate="auto"
                 repeatCount="1"
               />
-            </circle>
+              <animate
+                attributeName="opacity"
+                values="1;0.5;1"
+                dur="0.5s"
+                repeatCount="indefinite"
+              />
+            </path>
           )}
 
           {/* Nodes */}
           {graph.nodes.map((node) => {
             const isVisited = visited.has(node.id);
-            const isCurrent = steps[stepIndex - 1]?.currentNode === node.id;
+            // Only mark a node as "current" while the algorithm is running.
+            const isCurrent = isRunning && (steps[stepIndex - 1]?.currentNode === node.id);
             const isStart = node.id === startNode;
             return (
-              <g
-                key={node.id}
-                className="cursor-pointer"
-              >
+              <g key={node.id} className="cursor-pointer">
                 <circle
                   cx={node.x}
                   cy={node.y}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Play, Pause, RotateCcw, Plus, Sliders } from 'lucide-react';
 
 // Custom priority queue for Kruskal's algorithm
@@ -47,10 +47,14 @@ class DisjointSet {
 }
 
 const KruskalsAlgorithmVisualizer = () => {
+  // Graph state
   const [nodes, setNodes] = useState([]);
   const [edges, setEdges] = useState([]);
   const [mst, setMst] = useState([]);
-  const [currentEdge, setCurrentEdge] = useState(null);
+  // Renamed from currentEdge to activeEdge for consistency.
+  const [activeEdge, setActiveEdge] = useState(null);
+  
+  // Visualization state
   const [isPlaying, setIsPlaying] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
   const [speed, setSpeed] = useState(1000);
@@ -58,10 +62,14 @@ const KruskalsAlgorithmVisualizer = () => {
   const [totalCost, setTotalCost] = useState(0);
   const [algorithmSteps, setAlgorithmSteps] = useState([]);
   const [message, setMessage] = useState("Welcome to Kruskal's Algorithm Visualizer");
+  
+  // UI state for adding nodes/edges
   const [addingNode, setAddingNode] = useState(false);
   const [addingEdge, setAddingEdge] = useState(false);
   const [selectedNodes, setSelectedNodes] = useState([]);
   const [edgeWeight, setEdgeWeight] = useState(1);
+  
+  // SVG and viewBox
   const svgRef = useRef(null);
   const [viewBox] = useState("0 0 600 400");
 
@@ -70,7 +78,7 @@ const KruskalsAlgorithmVisualizer = () => {
     resetGraph();
   }, []);
 
-  // Set up a default graph with nodes and edges
+  // Set up default graph with nodes and edges
   const resetGraph = () => {
     const defaultNodes = [
       { id: 0, x: 100, y: 100, label: 'A' },
@@ -96,7 +104,7 @@ const KruskalsAlgorithmVisualizer = () => {
     setNodes(defaultNodes);
     setEdges(defaultEdges);
     setMst([]);
-    setCurrentEdge(null);
+    setActiveEdge(null);
     setIsPlaying(false);
     setIsComplete(false);
     setStep(0);
@@ -163,7 +171,7 @@ const KruskalsAlgorithmVisualizer = () => {
     setIsComplete(false);
     setStep(0);
     setMst([]);
-    setCurrentEdge(null);
+    setActiveEdge(null);
     setTotalCost(0);
     setMessage("Starting Kruskal's algorithm visualization...");
   };
@@ -179,7 +187,7 @@ const KruskalsAlgorithmVisualizer = () => {
     setIsComplete(false);
     setStep(0);
     setMst([]);
-    setCurrentEdge(null);
+    setActiveEdge(null);
     setTotalCost(0);
     setMessage("Visualization reset. Click 'Start' to begin again");
   };
@@ -189,7 +197,7 @@ const KruskalsAlgorithmVisualizer = () => {
     if (isPlaying && step < algorithmSteps.length) {
       const timer = setTimeout(() => {
         const currentStep = algorithmSteps[step];
-        setCurrentEdge(currentStep.edge);
+        setActiveEdge(currentStep.edge);
 
         // If the edge is accepted, add it to the MST and update the cost
         if (currentStep.edge && !currentStep.rejected) {
@@ -214,69 +222,76 @@ const KruskalsAlgorithmVisualizer = () => {
     }
   }, [isPlaying, step, algorithmSteps, speed]);
 
-  // Handle click on SVG canvas to add a new node
+  // --- Adding Nodes/Edges Functionality ---
   const handleSvgClick = (e) => {
     if (!addingNode) return;
-    const svgElement = svgRef.current;
-    const pt = svgElement.createSVGPoint();
+    const svg = svgRef.current;
+    if (!svg) return;
+    const pt = svg.createSVGPoint();
     pt.x = e.clientX;
     pt.y = e.clientY;
-    // Convert the point to SVG coordinate system
-    const svgP = pt.matrixTransform(svgElement.getScreenCTM().inverse());
+    const svgP = pt.matrixTransform(svg.getScreenCTM().inverse());
     const newNode = {
       id: nodes.length,
       x: svgP.x,
       y: svgP.y,
       label: String.fromCharCode(65 + (nodes.length % 26))
     };
-    setNodes(prevNodes => [...prevNodes, newNode]);
-    setAddingNode(false);
+    setNodes(prev => [...prev, newNode]);
     setMessage(`Added node ${newNode.label} at (${Math.round(svgP.x)}, ${Math.round(svgP.y)})`);
+    setAddingNode(false);
   };
 
-  // Handle node click when adding an edge
   const handleNodeClick = (nodeId) => {
-    if (!addingEdge) return;
-    const newSelectedNodes = [...selectedNodes];
-    if (!newSelectedNodes.includes(nodeId)) {
-      newSelectedNodes.push(nodeId);
-      setSelectedNodes(newSelectedNodes);
-      if (newSelectedNodes.length === 1) {
-        setMessage(`Selected node ${nodes[nodeId].label}. Select another node to create an edge.`);
-      } else if (newSelectedNodes.length === 2) {
-        // Check if edge already exists between these nodes
-        const edgeExists = edges.some(edge =>
-          (edge.source === newSelectedNodes[0] && edge.target === newSelectedNodes[1]) ||
-          (edge.source === newSelectedNodes[1] && edge.target === newSelectedNodes[0])
-        );
-        if (edgeExists) {
-          setMessage('Edge already exists between these nodes');
+    if (addingEdge) {
+      const newSelected = [...selectedNodes];
+      if (!newSelected.includes(nodeId)) {
+        newSelected.push(nodeId);
+        setSelectedNodes(newSelected);
+        if (newSelected.length === 1) {
+          setMessage(`Selected node ${nodes.find(n => n.id === nodeId).label}. Select another node to create an edge.`);
+        } else if (newSelected.length === 2) {
+          // Check if edge already exists between these nodes
+          const exists = edges.some(edge =>
+            (edge.source === newSelected[0] && edge.target === newSelected[1]) ||
+            (edge.source === newSelected[1] && edge.target === newSelected[0])
+          );
+          if (exists) {
+            setMessage("Edge already exists between these nodes.");
+            setSelectedNodes([]);
+            return;
+          }
+          const newEdge = {
+            id: edges.length,
+            source: newSelected[0],
+            target: newSelected[1],
+            weight: edgeWeight
+          };
+          setEdges(prev => [...prev, newEdge]);
+          setMessage(`Added edge between ${nodes[newSelected[0]].label} and ${nodes[newSelected[1]].label} (weight: ${edgeWeight})`);
           setSelectedNodes([]);
-          return;
+          setAddingEdge(false);
         }
-        const newEdge = {
-          id: edges.length,
-          source: newSelectedNodes[0],
-          target: newSelectedNodes[1],
-          weight: edgeWeight
-        };
-        setEdges(prevEdges => [...prevEdges, newEdge]);
-        setSelectedNodes([]);
-        setAddingEdge(false);
-        setMessage(`Added edge between ${nodes[newSelectedNodes[0]].label} and ${nodes[newSelectedNodes[1]].label} (weight: ${edgeWeight})`);
       }
     }
   };
 
-  // Determine the status of an edge for styling purposes
+  // Helper functions for edge styling
+  const isEdgeActive = (edge) => {
+    return (
+      activeEdge &&
+      ((edge.source === activeEdge.source && edge.target === activeEdge.target) ||
+       (edge.source === activeEdge.target && edge.target === activeEdge.source))
+    );
+  };
+
   const getEdgeStatus = (edge) => {
     if (mst.some(e => e.id === edge.id)) return 'included';
-    if (currentEdge && currentEdge.id === edge.id && algorithmSteps[step - 1]?.rejected) return 'rejected';
-    if (currentEdge && currentEdge.id === edge.id) return 'considering';
+    if (activeEdge && activeEdge.id === edge.id && algorithmSteps[step - 1]?.rejected) return 'rejected';
+    if (activeEdge && activeEdge.id === edge.id) return 'considering';
     return 'normal';
   };
 
-  // Return Tailwind CSS classes based on the edge status
   const getEdgeColor = (status) => {
     switch (status) {
       case 'included': return 'text-green-500 stroke-green-500';
@@ -286,7 +301,6 @@ const KruskalsAlgorithmVisualizer = () => {
     }
   };
 
-  // Return edge animation based on its status
   const getEdgeAnimation = (status) => {
     switch (status) {
       case 'included': return 'animate-pulse';
@@ -294,6 +308,21 @@ const KruskalsAlgorithmVisualizer = () => {
       case 'considering': return 'animate-pulse';
       default: return '';
     }
+  };
+
+  const getEdgeLabelPosition = (sourceNode, targetNode) => {
+    const mx = (sourceNode.x + targetNode.x) / 2;
+    const my = (sourceNode.y + targetNode.y) / 2;
+    return { x: mx, y: my };
+  };
+
+  const getActiveEdgeMotion = () => {
+    if (!activeEdge) return null;
+    const sourceActive = nodes.find(n => n.id === activeEdge.source);
+    const targetActive = nodes.find(n => n.id === activeEdge.target);
+    if (!sourceActive || !targetActive) return null;
+    const pathStr = `M ${sourceActive.x} ${sourceActive.y} L ${targetActive.x} ${targetActive.y}`;
+    return pathStr;
   };
 
   return (
@@ -449,7 +478,19 @@ const KruskalsAlgorithmVisualizer = () => {
                 </g>
               );
             })}
-
+  
+            {/* Animated traversal indicator on active edge */}
+            {activeEdge && getActiveEdgeMotion() && (
+              <circle r="5" fill="red">
+                <animateMotion 
+                  dur={`${speed / 1000}s`} 
+                  path={getActiveEdgeMotion()} 
+                  fill="freeze" 
+                  repeatCount="1" 
+                />
+              </circle>
+            )}
+  
             {/* Render nodes */}
             {nodes.map(node => {
               const isSelected = selectedNodes.includes(node.id);
@@ -480,12 +521,42 @@ const KruskalsAlgorithmVisualizer = () => {
         </svg>
       </div>
       
-      {/* Algorithm Info */}
+      {/* Control Buttons */}
+      <div className="flex flex-wrap gap-4 mt-6">
+        <button
+          onClick={startVisualization}
+          disabled={isPlaying}
+          className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+        >
+          {isPlaying ? 'Running...' : 'Start'}
+        </button>
+        <button
+          onClick={stopVisualization}
+          disabled={!isPlaying}
+          className="px-6 py-3 bg-yellow-500 text-white rounded-lg font-medium hover:bg-yellow-600 transition-colors disabled:opacity-50"
+        >
+          Pause
+        </button>
+        <button
+          onClick={resetVisualization}
+          className="px-6 py-3 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
+        >
+          Reset
+        </button>
+        <button
+          onClick={resetGraph}
+          className="px-6 py-3 bg-indigo-500 text-white rounded-lg font-medium hover:bg-indigo-600 transition-colors"
+        >
+          Reset Graph
+        </button>
+      </div>
+      
+      {/* Algorithm Info Panel */}
       <div className="w-full bg-white p-4 mt-6 rounded-lg shadow">
         <div className="mb-2">
           <h2 className="text-xl font-bold text-indigo-700">Kruskal's Algorithm</h2>
           <p className="text-gray-700 mt-2">
-            Kruskal's algorithm finds a minimum spanning tree for a connected weighted graph by adding the smallest weight edges one by one while avoiding cycles.
+            Kruskal's algorithm finds a minimum spanning tree (MST) for a connected weighted graph by selecting the smallest edges while avoiding cycles.
           </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
@@ -520,7 +591,7 @@ const KruskalsAlgorithmVisualizer = () => {
             <h3 className="font-semibold">Space Complexity</h3>
             <p className="mt-1">O(V + E)</p>
             <p className="text-sm text-gray-600 mt-1">
-              Space for the disjoint-set and edge storage
+              Space for disjoint-set and edge storage.
             </p>
           </div>
         </div>

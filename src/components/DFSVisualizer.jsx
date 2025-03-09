@@ -1,120 +1,106 @@
 import React, { useState, useEffect, useCallback } from 'react';
 
-// Modified utility function to generate cleaner, more understandable graphs
 const generateRandomGraph = (numNodes = 5) => {
   const nodes = [];
-  // Create nodes in a more structured layout (circular arrangement)
   const radius = 150;
   const centerX = 300;
   const centerY = 200;
 
   for (let i = 0; i < numNodes; i++) {
-    // Calculate position in a circle for better node distribution
     const angle = (i / numNodes) * 2 * Math.PI;
     const x = centerX + radius * Math.cos(angle);
     const y = centerY + radius * Math.sin(angle);
-    
+
     nodes.push({
       id: i,
-      label: String.fromCharCode(65 + i), // A, B, C, etc.
+      label: String.fromCharCode(65 + i),
       x: x,
       y: y,
     });
   }
 
   const edges = [];
-  
-  // First ensure basic connectivity with a circle structure
-  // Connect each node to the next node in sequence
+
   for (let i = 0; i < numNodes; i++) {
-    edges.push({ 
-      source: i, 
-      target: (i + 1) % numNodes 
+    edges.push({
+      source: i,
+      target: (i + 1) % numNodes
     });
   }
 
-  // Add just a few strategic cross-edges for variety but not complexity
-  // For graphs with more than 5 nodes, add a small number of cross connections
   if (numNodes > 4) {
-    // Add 1-3 cross edges depending on graph size
     const crossEdgesToAdd = Math.min(3, Math.floor(numNodes / 3));
-    
+
     for (let i = 0; i < crossEdgesToAdd; i++) {
-      // Choose nodes that aren't adjacent in the circle
       let source = Math.floor(Math.random() * numNodes);
       let target = (source + 2 + Math.floor(Math.random() * (numNodes - 4))) % numNodes;
-      
-      // Check if this edge already exists
-      if (!edges.some(edge => 
-          (edge.source === source && edge.target === target) || 
+
+      if (!edges.some(edge =>
+          (edge.source === source && edge.target === target) ||
           (edge.source === target && edge.target === source))) {
         edges.push({ source, target });
       }
     }
   }
-  
+
   return { nodes, edges };
 };
 
 const DFSVisualizer = () => {
-  // Graph state.
   const [graph, setGraph] = useState(generateRandomGraph(5));
   const [nodeCount, setNodeCount] = useState(5);
-  
-  // DFS state.
   const [startNode, setStartNode] = useState(null);
   const [visited, setVisited] = useState([]);
   const [isRunning, setIsRunning] = useState(false);
   const [current, setCurrent] = useState(null);
-  // Instead of just storing an edge, we store direction info: from & to.
   const [activeEdge, setActiveEdge] = useState(null);
+  const [visitedEdges, setVisitedEdges] = useState(new Set());
   const [showGuide, setShowGuide] = useState(true);
   const [animationSpeed, setAnimationSpeed] = useState(1000);
 
-  // Utility delay function.
   const delay = useCallback((ms) => new Promise(resolve => setTimeout(resolve, ms)), []);
 
-  // Asynchronous recursive DFS with visual updates.
   const dfs = useCallback(async (node, visitedSet = new Set()) => {
     visitedSet.add(node);
     setVisited(Array.from(visitedSet));
     setCurrent(node);
-    
-    await delay(animationSpeed); // Pause to show current node.
 
-    // Get neighbors that haven't been visited.
+    await delay(animationSpeed);
+
     const neighbors = graph.edges
       .filter(edge => edge.source === node || edge.target === node)
       .map(edge => (edge.source === node ? edge.target : edge.source))
       .filter(neighbor => !visitedSet.has(neighbor));
-    // Sort to have a deterministic order.
+
     neighbors.sort((a, b) => a - b);
 
     for (let neighbor of neighbors) {
-      // Determine the connecting edge.
       const connectingEdge = graph.edges.find(
         edge =>
           (edge.source === node && edge.target === neighbor) ||
           (edge.source === neighbor && edge.target === node)
       );
-      // Store both the edge and the DFS direction (from current node to neighbor).
-      setActiveEdge({ ...connectingEdge, from: node, to: neighbor });
-      await delay(animationSpeed / 2); // Let the edge animation play.
-      
+
+      const edgeKey = `${Math.min(node, neighbor)}-${Math.max(node, neighbor)}`;
+      const isDuplicate = visitedEdges.has(edgeKey);
+      setVisitedEdges(new Set(visitedEdges.add(edgeKey)));
+
+      setActiveEdge({ ...connectingEdge, from: node, to: neighbor, isDuplicate });
+      await delay(animationSpeed / 2);
+
       await dfs(neighbor, visitedSet);
     }
-    
-    // Clear active edge when finished with all neighbors.
-    setActiveEdge(null);
-  }, [graph.edges, delay, animationSpeed]);
 
-  // Start DFS if a start node is selected.
+    setActiveEdge(null);
+  }, [graph.edges, delay, animationSpeed, visitedEdges]);
+
   const handleStart = useCallback(() => {
     if (startNode !== null && !isRunning) {
       setIsRunning(true);
       setVisited([]);
       setCurrent(null);
       setActiveEdge(null);
+      setVisitedEdges(new Set());
       dfs(startNode, new Set()).then(() => {
         setCurrent(null);
         setIsRunning(false);
@@ -122,17 +108,16 @@ const DFSVisualizer = () => {
     }
   }, [startNode, isRunning, dfs]);
 
-  // Reset DFS state.
   const handleReset = useCallback(() => {
     if (!isRunning) {
       setVisited([]);
       setCurrent(null);
       setActiveEdge(null);
       setStartNode(null);
+      setVisitedEdges(new Set());
     }
   }, [isRunning]);
 
-  // Generate a new random graph.
   const handleRandomizeGraph = useCallback(() => {
     if (!isRunning) {
       setGraph(generateRandomGraph(nodeCount));
@@ -140,13 +125,11 @@ const DFSVisualizer = () => {
     }
   }, [isRunning, handleReset, nodeCount]);
 
-  // Handle node click.
   const handleNodeClick = useCallback((nodeId) => {
     if (isRunning) return;
     setStartNode(nodeId);
   }, [isRunning]);
 
-  // Handle node count change.
   const handleNodeCountChange = useCallback((e) => {
     const newCount = parseInt(e.target.value, 10);
     if (!isRunning && newCount >= 3 && newCount <= 10) {
@@ -156,42 +139,66 @@ const DFSVisualizer = () => {
     }
   }, [isRunning, handleReset]);
 
-  // Handle animation speed change.
   const handleSpeedChange = useCallback((e) => {
     setAnimationSpeed(parseInt(e.target.value, 10));
   }, []);
 
-  // Auto-hide the guide after 10 seconds.
   useEffect(() => {
     const timer = setTimeout(() => setShowGuide(false), 10000);
     return () => clearTimeout(timer);
   }, []);
 
-  // Check if an edge is active (for static styling).
-  const isEdgeActive = useCallback((edge) => {
-    return (
-      activeEdge &&
-      ((edge.source === activeEdge.source && edge.target === activeEdge.target) ||
-       (edge.source === activeEdge.target && edge.target === activeEdge.source))
-    );
-  }, [activeEdge]);
+  // Helper to determine edge class based on its status
+  const getEdgeClass = (edge) => {
+    const edgeKey = `${Math.min(edge.source, edge.target)}-${Math.max(edge.source, edge.target)}`;
+    if (activeEdge &&
+      ((activeEdge.from === edge.source && activeEdge.to === edge.target) ||
+       (activeEdge.from === edge.target && activeEdge.to === edge.source))
+    ) {
+      return activeEdge.isDuplicate ? "duplicate-edge" : "active-edge";
+    } else if (visitedEdges.has(edgeKey)) {
+      return "visited-edge";
+    } else {
+      return "default-edge";
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 p-6 relative">
-      {/* Inline CSS for edge drawing animation */}
       <style>{`
-        @keyframes drawLine {
+        @keyframes drawEdge {
           from { stroke-dashoffset: 100; }
           to { stroke-dashoffset: 0; }
         }
-        .animate-draw {
+        /* Active edge being traversed */
+        .active-edge {
+          stroke: #007bff;
+          stroke-width: 4;
           stroke-dasharray: 100;
           stroke-dashoffset: 100;
-          animation: drawLine 1s forwards;
+          animation: drawEdge 0.5s forwards;
+        }
+        /* Duplicate edge (attempted revisit) */
+        .duplicate-edge {
+          stroke: red;
+          stroke-width: 4;
+          stroke-dasharray: 100;
+          stroke-dashoffset: 100;
+          animation: drawEdge 0.5s forwards;
+        }
+        /* Visited edge (already traversed) */
+        .visited-edge {
+          stroke: #28a745;
+          stroke-width: 2;
+          opacity: 0.8;
+        }
+        /* Default edge style */
+        .default-edge {
+          stroke: #ccc;
+          stroke-width: 2;
         }
       `}</style>
 
-      {/* User Guide Modal */}
       {showGuide && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg max-w-md mx-auto">
@@ -204,7 +211,7 @@ const DFSVisualizer = () => {
               <li>Use <span className="font-semibold">Randomize Graph</span> to create a new graph.</li>
               <li>Click <span className="font-semibold">Reset</span> to restart the DFS on the current graph.</li>
             </ul>
-            <button 
+            <button
               onClick={() => setShowGuide(false)}
               className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
             >
@@ -214,15 +221,13 @@ const DFSVisualizer = () => {
         </div>
       )}
 
-      {/* Header */}
       <header className="text-center mb-8">
         <h1 className="text-4xl font-extrabold text-gray-800">Depth-First Search Visualizer</h1>
         <p className="text-gray-600 mt-2">
           Experience an interactive, animated visualization of the DFS algorithm.
         </p>
       </header>
-      
-      {/* Configuration Controls */}
+
       <div className="w-full max-w-4xl mx-auto mb-6 bg-white p-4 rounded-md shadow grid md:grid-cols-3 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Number of Nodes</label>
@@ -240,7 +245,7 @@ const DFSVisualizer = () => {
             <span className="text-gray-700">{nodeCount}</span>
           </div>
         </div>
-        
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Animation Speed (ms)</label>
           <div className="flex items-center">
@@ -256,9 +261,9 @@ const DFSVisualizer = () => {
             <span className="text-gray-700">{animationSpeed}</span>
           </div>
         </div>
-        
+
         <div className="flex items-end">
-          <button 
+          <button
             onClick={() => setShowGuide(true)}
             className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
           >
@@ -267,24 +272,19 @@ const DFSVisualizer = () => {
         </div>
       </div>
 
-      {/* Graph Visualization */}
       <div className="flex flex-col items-center">
         <div className="w-full max-w-4xl bg-white rounded-md shadow border border-gray-300 p-4">
           <svg viewBox="0 0 600 400" className="w-full h-auto">
-            {/* Define arrow marker for directional indication */}
             <defs>
               <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
                 <polygon points="0 0, 10 3.5, 0 7" fill="blue" />
               </marker>
             </defs>
 
-            {/* Render Edges */}
             {graph.edges.map((edge, index) => {
               const sourceNode = graph.nodes.find(n => n.id === edge.source);
               const targetNode = graph.nodes.find(n => n.id === edge.target);
-              const activeClass = isEdgeActive(edge)
-                ? 'animate-draw stroke-blue-500'
-                : 'stroke-gray-300';
+              const edgeClass = getEdgeClass(edge);
               return (
                 <line
                   key={`edge-${index}`}
@@ -292,15 +292,11 @@ const DFSVisualizer = () => {
                   y1={sourceNode.y}
                   x2={targetNode.x}
                   y2={targetNode.y}
-                  strokeWidth="2"
-                  className={`transition-all duration-300 ${activeClass}`}
-                  // Optionally, add marker-end to indicate direction on static edges:
-                  // markerEnd="url(#arrowhead)"
+                  className={`transition-all duration-300 ${edgeClass}`}
                 />
               );
             })}
 
-            {/* Animated traversal indicator for active edge */}
             {activeEdge && (() => {
               const sourceActive = graph.nodes.find(n => n.id === activeEdge.from);
               const targetActive = graph.nodes.find(n => n.id === activeEdge.to);
@@ -308,16 +304,16 @@ const DFSVisualizer = () => {
               const pathStr = `M ${sourceActive.x} ${sourceActive.y} L ${targetActive.x} ${targetActive.y}`;
               return (
                 <circle r="5" fill="red">
-                  <animateMotion 
-                    dur={`${animationSpeed / 1000}s`} 
-                    path={pathStr} 
-                    fill="freeze" 
-                    repeatCount="1" />
+                  <animateMotion
+                    dur={`${animationSpeed / 1000}s`}
+                    path={pathStr}
+                    fill="freeze"
+                    repeatCount="indefinite"
+                  />
                 </circle>
               );
             })()}
 
-            {/* Render Nodes */}
             {graph.nodes.map((node) => {
               const isVisited = visited.includes(node.id);
               const isCurrent = current === node.id;
@@ -354,7 +350,6 @@ const DFSVisualizer = () => {
           </svg>
         </div>
 
-        {/* Control Buttons */}
         <div className="flex flex-wrap gap-4 mt-6">
           <button
             onClick={handleStart}
@@ -379,7 +374,6 @@ const DFSVisualizer = () => {
           </button>
         </div>
 
-        {/* DFS Details Panel */}
         <div className="mt-8 w-full max-w-4xl bg-gray-50 p-6 rounded-md shadow">
           <h2 className="text-xl font-semibold mb-4 text-gray-800">DFS Details</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -392,16 +386,16 @@ const DFSVisualizer = () => {
               </p>
               <p className="mb-2">
                 <strong>Start Node:</strong>{' '}
-                {startNode !== null 
-                  ? graph.nodes.find(n => n.id === startNode).label 
+                {startNode !== null
+                  ? graph.nodes.find(n => n.id === startNode).label
                   : 'None'}
               </p>
             </div>
             <div>
               <p className="mb-2">
                 <strong>Current Node:</strong>{' '}
-                {current !== null 
-                  ? graph.nodes.find(n => n.id === current).label 
+                {current !== null
+                  ? graph.nodes.find(n => n.id === current).label
                   : 'None'}
               </p>
               <p className="mb-2">

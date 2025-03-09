@@ -1,67 +1,84 @@
 import React, { useState, useEffect, useCallback } from 'react';
 
-// Improved utility function to generate simpler, more understandable random graphs
+// Utility function to generate a random graph with nodes arranged in a circular layout.
 const generateRandomGraph = (numNodes = 5) => {
   const nodes = [];
   for (let i = 0; i < numNodes; i++) {
     nodes.push({
       id: i,
       label: String.fromCharCode(65 + i), // A, B, C, etc.
-      // Arrange nodes in a more structured layout (circular pattern)
-      x: Math.cos(2 * Math.PI * i / numNodes) * 200 + 300,
-      y: Math.sin(2 * Math.PI * i / numNodes) * 150 + 200,
+      x: Math.cos((2 * Math.PI * i) / numNodes) * 200 + 300,
+      y: Math.sin((2 * Math.PI * i) / numNodes) * 150 + 200,
     });
   }
-  
+
   const edges = [];
-  // Create a simple connected structure (circular path)
+  // Create a circular connected structure.
   for (let i = 0; i < numNodes; i++) {
-    edges.push({ 
-      source: i, 
-      target: (i + 1) % numNodes 
+    edges.push({
+      source: i,
+      target: (i + 1) % numNodes
     });
   }
-  
-  // Add a few additional edges for interest, but limit the complexity
-  const maxAdditionalEdges = Math.min(numNodes - 2, 3); // Limit additional edges
+
+  // Add a few additional random edges (limited for clarity).
+  const maxAdditionalEdges = Math.min(numNodes - 2, 3);
   let addedEdges = 0;
-  
-  // Try to add a few random non-adjacent edges
   for (let i = 0; i < numNodes && addedEdges < maxAdditionalEdges; i++) {
     for (let j = i + 2; j < numNodes && j !== (i + 1) % numNodes && addedEdges < maxAdditionalEdges; j++) {
       if (
-        edges.some(edge => 
+        edges.some(edge =>
           (edge.source === i && edge.target === j) ||
           (edge.source === j && edge.target === i)
         )
       )
         continue;
-      
-      // Lower probability for additional edges
+
       if (Math.random() < 0.25) {
         edges.push({ source: i, target: j });
         addedEdges++;
       }
     }
   }
-  
+
   return { nodes, edges };
 };
 
+// Improved AnimatedEdge Component
+// Renders a directional animated arrow along the edge from source to target.
+const AnimatedEdge = ({ source, target, animationSpeed }) => {
+  // Create a path from the source to target.
+  const pathStr = `M ${source.x} ${source.y} L ${target.x} ${target.y}`;
+
+  return (
+    <polygon points="0,-5 10,0 0,5" fill="red">
+      <animateMotion
+        dur={`${animationSpeed / 1000}s`}
+        path={pathStr}
+        rotate="auto"
+        calcMode="linear"
+        fill="remove"
+        begin="0s"
+        repeatCount="indefinite"
+      />
+    </polygon>
+  );
+};
+
 const BFSVisualizer = () => {
-  // Graph and configuration state.
+  // Graph configuration state.
   const [graph, setGraph] = useState(generateRandomGraph(5));
   const [nodeCount, setNodeCount] = useState(5);
-  
-  // BFS state.
+
+  // BFS algorithm state.
   const [startNode, setStartNode] = useState(null);
   const [visited, setVisited] = useState([]);
   const [queue, setQueue] = useState([]);
   const [isRunning, setIsRunning] = useState(false);
   const [current, setCurrent] = useState(null);
-  // activeEdge holds the edge being animated along with the traversal direction.
+  // activeEdge holds the currently animated edge along with traversal direction.
   const [activeEdge, setActiveEdge] = useState(null);
-  
+
   // UI state.
   const [showGuide, setShowGuide] = useState(true);
   const [animationSpeed, setAnimationSpeed] = useState(1000);
@@ -74,7 +91,7 @@ const BFSVisualizer = () => {
     setIsRunning(true);
     const visitedSet = new Set();
     const q = [];
-    
+
     visitedSet.add(start);
     q.push(start);
     setVisited([start]);
@@ -84,9 +101,9 @@ const BFSVisualizer = () => {
       const node = q.shift();
       setCurrent(node);
       setQueue([...q]);
-      
-      await delay(animationSpeed); // Pause before processing neighbors.
-      
+
+      await delay(animationSpeed);
+
       // Determine unvisited neighbors.
       const neighbors = graph.edges
         .filter(edge => edge.source === node || edge.target === node)
@@ -96,7 +113,6 @@ const BFSVisualizer = () => {
       // Sort for deterministic order.
       neighbors.sort((a, b) => a - b);
 
-      // Process each neighbor with animation.
       for (let neighbor of neighbors) {
         const connectingEdge = graph.edges.find(edge =>
           (edge.source === node && edge.target === neighbor) ||
@@ -105,14 +121,15 @@ const BFSVisualizer = () => {
         // Set the active edge with direction for animation.
         setActiveEdge({ ...connectingEdge, from: node, to: neighbor });
         await delay(animationSpeed / 2);
-        
+
         visitedSet.add(neighbor);
         q.push(neighbor);
         setVisited(Array.from(visitedSet));
         setQueue([...q]);
-        
+
         await delay(animationSpeed / 2);
       }
+
       // Clear the active edge after processing the current node.
       setActiveEdge(null);
     }
@@ -128,13 +145,13 @@ const BFSVisualizer = () => {
 
   const handleStart = () => {
     if (startNode !== null && !isRunning) {
-      // Ensure we reset any previous state
+      // Reset previous state.
       setVisited([]);
       setQueue([]);
       setCurrent(null);
       setActiveEdge(null);
-      
-      // Start the BFS algorithm
+
+      // Start BFS.
       bfs(startNode);
     }
   };
@@ -192,10 +209,17 @@ const BFSVisualizer = () => {
           from { stroke-dashoffset: 100; }
           to { stroke-dashoffset: 0; }
         }
+        @keyframes pulse {
+          0%, 100% { stroke-width: 3; }
+          50% { stroke-width: 5; }
+        }
         .animate-draw {
           stroke-dasharray: 100;
           stroke-dashoffset: 100;
           animation: drawLine 1s forwards;
+        }
+        .pulse {
+          animation: pulse 0.5s infinite;
         }
       `}</style>
 
@@ -212,7 +236,7 @@ const BFSVisualizer = () => {
               <li>Use <span className="font-semibold">Randomize Graph</span> to create a new graph.</li>
               <li>Click <span className="font-semibold">Reset</span> to restart the BFS on the current graph.</li>
             </ul>
-            <button 
+            <button
               onClick={() => setShowGuide(false)}
               className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
             >
@@ -229,7 +253,7 @@ const BFSVisualizer = () => {
           Experience an interactive, animated visualization of the BFS algorithm.
         </p>
       </header>
-      
+
       <div className="w-full max-w-4xl mx-auto mb-6 bg-white p-4 rounded-md shadow grid md:grid-cols-3 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Number of Nodes</label>
@@ -247,7 +271,7 @@ const BFSVisualizer = () => {
             <span className="text-gray-700">{nodeCount}</span>
           </div>
         </div>
-        
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Animation Speed (ms)</label>
           <div className="flex items-center">
@@ -263,9 +287,9 @@ const BFSVisualizer = () => {
             <span className="text-gray-700">{animationSpeed}</span>
           </div>
         </div>
-        
+
         <div className="flex items-end">
-          <button 
+          <button
             onClick={() => setShowGuide(true)}
             className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
           >
@@ -273,7 +297,7 @@ const BFSVisualizer = () => {
           </button>
         </div>
       </div>
-      
+
       {/* Graph Visualization */}
       <div className="flex flex-col items-center">
         <div className="w-full max-w-4xl bg-white rounded-md shadow border border-gray-300 p-4">
@@ -288,7 +312,7 @@ const BFSVisualizer = () => {
             {graph.edges.map((edge, index) => {
               const sourceNode = graph.nodes.find(n => n.id === edge.source);
               const targetNode = graph.nodes.find(n => n.id === edge.target);
-              const activeClass = isEdgeActive(edge) ? 'animate-draw stroke-blue-500' : 'stroke-gray-300';
+              const activeClass = isEdgeActive(edge) ? 'animate-draw stroke-blue-500 pulse' : 'stroke-gray-300';
               return (
                 <line
                   key={`edge-${index}`}
@@ -302,21 +326,17 @@ const BFSVisualizer = () => {
               );
             })}
 
-            {/* Animated traversal indicator on active edge */}
+            {/* Improved Animated Traversal Indicator */}
             {activeEdge && (() => {
               const sourceActive = graph.nodes.find(n => n.id === activeEdge.from);
               const targetActive = graph.nodes.find(n => n.id === activeEdge.to);
               if (!sourceActive || !targetActive) return null;
-              const pathStr = `M ${sourceActive.x} ${sourceActive.y} L ${targetActive.x} ${targetActive.y}`;
               return (
-                <circle r="5" fill="red">
-                  <animateMotion 
-                    dur={`${animationSpeed / 1000}s`} 
-                    path={pathStr} 
-                    fill="freeze" 
-                    repeatCount="1" 
-                  />
-                </circle>
+                <AnimatedEdge
+                  source={sourceActive}
+                  target={targetActive}
+                  animationSpeed={animationSpeed}
+                />
               );
             })()}
 
@@ -391,27 +411,27 @@ const BFSVisualizer = () => {
               <p className="mb-2"><strong>Total Edges:</strong> {graph.edges.length}</p>
               <p className="mb-2">
                 <strong>Start Node:</strong>{' '}
-                {startNode !== null 
-                  ? graph.nodes.find(n => n.id === startNode)?.label 
+                {startNode !== null
+                  ? graph.nodes.find(n => n.id === startNode)?.label
                   : 'None'}
               </p>
             </div>
             <div>
               <p className="mb-2">
                 <strong>Current Node:</strong>{' '}
-                {current !== null 
-                  ? graph.nodes.find(n => n.id === current)?.label 
+                {current !== null
+                  ? graph.nodes.find(n => n.id === current)?.label
                   : 'None'}
               </p>
               <p className="mb-2">
                 <strong>Queue:</strong>{' '}
-                {queue.length > 0 
+                {queue.length > 0
                   ? queue.map(id => graph.nodes.find(n => n.id === id)?.label).join(', ')
                   : 'Empty'}
               </p>
               <p className="mb-2">
                 <strong>Visited Order:</strong>{' '}
-                {visited.length > 0 
+                {visited.length > 0
                   ? visited.map(id => graph.nodes.find(n => n.id === id)?.label).join(' -> ')
                   : 'None'}
               </p>
