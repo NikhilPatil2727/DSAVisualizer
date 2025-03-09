@@ -271,7 +271,7 @@ const BubbleSortVisualizer = () => {
                 <input
                   type="number"
                   min="5"
-                  max="50"
+                  max="20"
                   value={arraySize}
                   onChange={(e) => setArraySize(Number(e.target.value))}
                   className="w-16 p-1 border rounded text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400"
