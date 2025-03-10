@@ -1,6 +1,15 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { BrowserRouter, Routes, Route, Outlet, Link } from "react-router";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Outlet,
+  Link,
+  useLocation
+} from "react-router";
+
+// Import your visualizer components
 import LinearSearchVisualizer from "./components/LinearSearchVisualizer";
 import BinarySearchVisualizer from "./components/BinarySearchVisualizer";
 import SearchAlgorithmRace from "./components/SearchAlgorithmRace";
@@ -30,9 +39,7 @@ const Navbar = () => {
   return (
     <nav className="sticky top-0 z-50 bg-gray-800 text-white px-4 py-3 shadow-md">
       <div className="container mx-auto flex justify-between items-center">
-    
         <Link to="/" className="text-xl font-bold">
-       
           DSA Visualizer
         </Link>
         <div>
@@ -48,10 +55,12 @@ const Navbar = () => {
 
 // Layout component wraps all pages so that the Navbar is always visible
 const Layout = () => {
+  const location = useLocation();
   return (
     <>
       <Navbar />
-      <Outlet />
+      {/* Adding a key forces remount on route change */}
+      <Outlet key={location.pathname} />
     </>
   );
 };
@@ -69,38 +78,36 @@ function App() {
           <Route path="/searching/algo3" element={<SearchAlgorithmRace />} />
 
           {/* Routes for Sorting Algos */}
-          <Route path="/sorting/algoA" element={<BubbleSortVisualizer/>} />
-          <Route path="/sorting/algoB" element={<InsertionSortVisualizer/>} />
-          <Route path="/sorting/algoC" element={<SelectionSortVisualizer/>} />
-          <Route path="/sorting/algoD" element={<MergeSortVisualizer/>} />
-          <Route path="/sorting/algoE" element={<QuickSortVisualizer/>} />
-          <Route path="/sorting/algoF" element={<AlgorithmRace/>} />
-
+          <Route path="/sorting/algoA" element={<BubbleSortVisualizer />} />
+          <Route path="/sorting/algoB" element={<InsertionSortVisualizer />} />
+          <Route path="/sorting/algoC" element={<SelectionSortVisualizer />} />
+          <Route path="/sorting/algox" element={<MergeSortVisualizer />} />
+          <Route path="/sorting/algoE" element={<QuickSortVisualizer />} />
+          <Route path="/sorting/algoF" element={<AlgorithmRace />} />
 
           {/* Routes for Backtracking Algos */}
-          <Route path="/backtracking/algoX" element={<NQueensVisualize/>} />
-          <Route path="/backtracking/algoY" element={<SudokuSolverVisualizer/>} />
-          
+          <Route path="/backtracking/algoX" element={<NQueensVisualize />} />
+          <Route path="/backtracking/algoZ" element={<SudokuSolverVisualizer />} />
 
-          {/* Dummy Routes for Graph Algos */}
-          <Route path="/graph/algo1" element={<BFSVisualizer/>} />
-          <Route path="/graph/algo2" element={<DFSVisualizer/>} />
-          <Route path="/graph/algo3" element={<DijkstraVisualizer/>} />
-          <Route path="/graph/algo4" element={<PrimsAlgorithmVisualizer/>} />
-          <Route path="/graph/algo5" element={<KruskalsAlgorithmVisualizer/>} />
+          {/* Routes for Graph Algos */}
+          <Route path="/graph/algo1" element={<BFSVisualizer />} />
+          <Route path="/graph/algo2" element={<DFSVisualizer />} />
+          <Route path="/graph/algo3" element={<DijkstraVisualizer />} />
+          <Route path="/graph/algo4" element={<PrimsAlgorithmVisualizer />} />
+          <Route path="/graph/algo5" element={<KruskalsAlgorithmVisualizer />} />
 
-          {/* Daynamic Programming*/}
-          <Route path="/dp/algo1" element={<FibonacciVisualizer/>} />
+          {/* Route for Dynamic Programming */}
+          <Route path="/dp/algo1" element={<FibonacciVisualizer />} />
 
-          {/* Tree Algorithms*/}
-          <Route path="/tree/algo1" element={<TreeTraversalVisualizer/>} />
-          <Route path="/tree/algo2" element={<BSTVisualizer/>} />
-           
-           {/* Greedy Algorithm  */}
-            <Route path="/greedy/algo1" element={<HuffmanCodingVisualizer/>} />
+          {/* Routes for Tree Algorithms */}
+          <Route path="/tree/algo1" element={<TreeTraversalVisualizer />} />
+          <Route path="/tree/algo2" element={<BSTVisualizer />} />
 
-            {/* Mathematical Algorithms*/}
-            <Route path="/math/algo1" element={<GCDVisualizer/>} />
+          {/* Route for Greedy Algorithm */}
+          <Route path="/greedy/algo1" element={<HuffmanCodingVisualizer />} />
+
+          {/* Route for Mathematical Algorithms */}
+          <Route path="/math/algo1" element={<GCDVisualizer />} />
         </Route>
       </Routes>
     </BrowserRouter>

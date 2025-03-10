@@ -1,3 +1,4 @@
+import React from 'react';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useImmer } from 'use-immer';
 import { motion, AnimatePresence } from 'framer-motion';
