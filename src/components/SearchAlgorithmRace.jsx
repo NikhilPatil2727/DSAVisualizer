@@ -308,12 +308,14 @@ const SearchAlgorithmRace = () => {
   };
   
   return (
-    <div className="w-full max-w-6xl mx-auto p-4 bg-gray-50 rounded-lg shadow-lg">
-      <h1 className="text-3xl font-bold text-purple-700 mb-4 text-center">Search Algorithm Race</h1>
+    <div className="container mx-auto p-4 sm:p-6 lg:p-8 bg-gray-50 rounded-lg shadow-lg">
+      <h1 className="text-2xl sm:text-3xl font-bold text-purple-700 mb-4 text-center">
+        Search Algorithm Race
+      </h1>
       
       {/* Controls Panel */}
-      <div className="w-full flex flex-wrap justify-center gap-4 mb-6 bg-white p-4 rounded-lg shadow">
-        <div className="flex gap-2">
+      <div className="w-full flex flex-col sm:flex-row flex-wrap justify-center gap-4 mb-6 bg-white p-4 rounded-lg shadow">
+        <div className="flex gap-2 flex-wrap justify-center">
           <button 
             onClick={startRace} 
             disabled={isPlaying}
@@ -336,7 +338,7 @@ const SearchAlgorithmRace = () => {
           </button>
         </div>
         
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap justify-center">
           <button 
             onClick={generateRandomArray}
             className="flex items-center gap-1 px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded"
@@ -351,9 +353,9 @@ const SearchAlgorithmRace = () => {
           </button>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 justify-center">
           <label className="flex items-center gap-2">
-            <span>Speed:</span>
+            <span className="text-sm">Speed:</span>
             <input 
               type="range" 
               min={100} 
@@ -363,13 +365,13 @@ const SearchAlgorithmRace = () => {
               onChange={e => setSpeed(Number(e.target.value))} 
               className="w-32"
             />
-            <span>{(1000/speed).toFixed(1)}x</span>
+            <span className="text-sm">{(1000/speed).toFixed(1)}x</span>
           </label>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 justify-center">
           <label className="flex items-center gap-2">
-            <span>Array Size:</span>
+            <span className="text-sm">Array Size:</span>
             <input 
               type="range" 
               min={5} 
@@ -379,7 +381,7 @@ const SearchAlgorithmRace = () => {
               disabled={isPlaying}
               className="w-32"
             />
-            <span>{arraySize}</span>
+            <span className="text-sm">{arraySize}</span>
           </label>
         </div>
       </div>
@@ -421,8 +423,8 @@ const SearchAlgorithmRace = () => {
       
       {/* Race Status */}
       <div className="w-full bg-white p-4 mb-6 rounded-lg shadow">
-        <div className="flex justify-between items-center">
-          <div>
+        <div className="flex flex-col sm:flex-row justify-between items-center">
+          <div className="mb-2 sm:mb-0">
             <span className="font-semibold">Target:</span> {target}
           </div>
           <div>
@@ -438,7 +440,7 @@ const SearchAlgorithmRace = () => {
       <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
         {algorithms.map((algo) => (
           <div key={algo.id} className={`bg-white p-4 rounded-lg shadow border-l-4 ${algo.borderColor}`}>
-            <h2 className={`text-xl font-bold ${algo.textColor} flex items-center gap-2`}>
+            <h2 className={`text-xl sm:text-2xl font-bold ${algo.textColor} flex items-center gap-2`}>
               {algo.completed && algo.found && <Trophy size={18} />}
               {algo.name}
             </h2>
@@ -477,9 +479,9 @@ const SearchAlgorithmRace = () => {
       </div>
       
       {/* Visualization */}
-      <div className="w-full bg-white p-4 rounded-lg shadow mb-6">
+      <div className="w-full bg-white p-4 rounded-lg shadow mb-6 overflow-x-auto">
         <div className="relative mb-12">
-          <div className="flex border-b border-gray-300">
+          <div className="flex border-b border-gray-300 min-w-[400px]">
             {array.map((value, index) => (
               <div 
                 key={index} 
@@ -551,7 +553,7 @@ const SearchAlgorithmRace = () => {
       <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4">
         {algorithms.map(algo => (
           <div key={`${algo.id}-details`} className="bg-white p-4 rounded-lg shadow">
-            <h2 className={`text-xl font-bold ${algo.textColor} mb-2`}>{algo.name}</h2>
+            <h2 className={`text-xl sm:text-2xl font-bold ${algo.textColor} mb-2`}>{algo.name}</h2>
             <p className="text-gray-700 mb-3">{algo.description}</p>
             
             <div className="grid grid-cols-3 gap-2 text-sm">
